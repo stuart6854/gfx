@@ -66,6 +66,8 @@ namespace sm::gfx
 
 		std::unordered_map<std::uint32_t, std::uint32_t> m_queueFlagsQueueFamilyMap;
 		std::unordered_map<std::uint32_t, vk::UniqueCommandPool> m_queueFamilyCommandPoolMap;
+		std::unordered_map<std::uint32_t, vk::Queue> m_queueFlagsQueueMap;
+
 		std::unordered_map<ResourceHandle, std::unique_ptr<CommandList>> m_commandListMap;
 		std::uint32_t m_nextCommandListId{ 1 };
 	};

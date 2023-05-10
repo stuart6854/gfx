@@ -278,6 +278,8 @@ namespace sm::gfx
 				if (queueProps.queueFlags & wanted_flags)
 				{
 					usedQueueFamilyCounts[i] += 1;
+					m_queueFlagsQueueFamilyMap[queue_flags] = i;
+					break;
 				}
 			}
 		}
@@ -302,6 +304,19 @@ namespace sm::gfx
 		}
 
 		VULKAN_HPP_DEFAULT_DISPATCHER.init(*m_device);
+
+		std::unordered_map<std::uint32_t, std::uint32_t> queueIndexMap;
+		for (auto [queueFlags, queueFamily] : m_queueFlagsQueueFamilyMap)
+		{
+			vk::CommandPoolCreateInfo cmd_pool_info{};
+			cmd_pool_info.setQueueFamilyIndex(queueFamily);
+			cmd_pool_info.setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer);
+			m_queueFamilyCommandPoolMap[queueFamily] = m_device->createCommandPoolUnique(cmd_pool_info);
+
+			auto queueIndex = queueIndexMap[queueFamily];
+			m_queueFlagsQueueMap[queueFlags] = m_device->getQueue(queueFamily, queueIndex);
+			queueIndexMap[queueFamily] += 1;
+		}
 	}
 
 	bool Device::is_valid() const
