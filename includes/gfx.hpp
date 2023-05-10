@@ -45,18 +45,20 @@
 	{                                    \
 	}
 
-#define GFX_DEFINE_RESOURCE_HANDLE(_typename)  \
-	struct _typename                           \
-	{                                          \
-		union                                  \
-		{                                      \
-			std::uint64_t fullHandle;          \
-			struct                             \
-			{                                  \
-				DeviceHandle deviceHandle;     \
-				ResourceHandle resourceHandle; \
-			};                                 \
-		};                                     \
+#define GFX_DEFINE_RESOURCE_HANDLE(_typename)                                                                                               \
+	struct _typename                                                                                                                        \
+	{                                                                                                                                       \
+		union                                                                                                                               \
+		{                                                                                                                                   \
+			std::uint64_t fullHandle{};                                                                                                     \
+			struct                                                                                                                          \
+			{                                                                                                                               \
+				DeviceHandle deviceHandle;                                                                                                  \
+				ResourceHandle resourceHandle;                                                                                              \
+			};                                                                                                                              \
+		};                                                                                                                                  \
+		_typename() = default;                                                                                                              \
+		_typename(DeviceHandle deviceHandle, ResourceHandle resourceHandle) : deviceHandle(deviceHandle), resourceHandle(resourceHandle) {} \
 	}
 
 #define CAST_HANDLE_TO_INT(_handle) static_cast<std::uint32_t>(_handle)
