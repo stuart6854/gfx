@@ -15,7 +15,10 @@ int main()
 	glfwInit();
 	auto* window = glfwCreateWindow(1080, 720, "GFX", nullptr, nullptr);
 
-	gfx::set_error_callback([](const char* msg) { throw std::runtime_error(msg); });
+	gfx::set_error_callback([](const char* msg) {
+		GFX_LOG_ERR(msg);
+		GFX_ASSERT(false, "");
+	});
 
 	gfx::AppInfo appInfo{ "Sandbox App" };
 	if (!gfx::initialise(appInfo))
