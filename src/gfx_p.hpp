@@ -50,7 +50,7 @@ namespace sm::gfx
 	{
 	public:
 		Device() = default;
-		Device(vk::Instance instance, const DeviceInfo& deviceInfo);
+		Device(DeviceHandle deviceHandle, vk::Instance instance, const DeviceInfo& deviceInfo);
 		~Device() = default;
 		DISABLE_COPY_AND_MOVE(Device);
 
@@ -61,6 +61,8 @@ namespace sm::gfx
 		bool submit_command_list(CommandListHandle commandListHandle, FenceHandle* outFenceHandle, SemaphoreHandle* outSemaphoreHandle);
 
 	private:
+		DeviceHandle m_deviceHandle;
+
 		vk::PhysicalDevice m_physicalDevice;
 		vk::UniqueDevice m_device;
 

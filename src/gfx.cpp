@@ -178,13 +178,14 @@ namespace sm::gfx
 
 	auto Context::create_device(DeviceHandle& outDeviceHandle, const DeviceInfo& deviceInfo) -> bool
 	{
-		auto device = std::make_unique<Device>(s_context->get_instance(), deviceInfo);
+		auto deviceHandle = DeviceHandle(m_nextDeviceId);
+
+		auto device = std::make_unique<Device>(deviceHandle, s_context->get_instance(), deviceInfo);
 		if (!device->is_valid())
 		{
 			return false;
 		}
 
-		auto deviceHandle = DeviceHandle(m_nextDeviceId);
 		m_nextDeviceId++;
 		m_deviceMap[deviceHandle] = std::move(device);
 
@@ -212,7 +213,8 @@ namespace sm::gfx
 		return true;
 	}
 
-	Device::Device(vk::Instance instance, const DeviceInfo& deviceInfo)
+	Device::Device(DeviceHandle deviceHandle, vk::Instance instance, const DeviceInfo& deviceInfo)
+		: m_deviceHandle(deviceHandle)
 	{
 		auto physicalDevices = instance.enumeratePhysicalDevices();
 		if (physicalDevices.empty())
@@ -329,8 +331,7 @@ namespace sm::gfx
 		auto queueFamily = m_queueFlagsQueueFamilyMap.at(queueFlags);
 		auto commandPool = m_queueFamilyCommandPoolMap.at(queueFamily).get();
 
-		CommandListHandle commandListHandle{};
-		commandListHandle.resourceHandle = ResourceHandle(m_nextCommandListId);
+		CommandListHandle commandListHandle(m_deviceHandle, ResourceHandle(m_nextCommandListId));
 
 		m_commandListMap[commandListHandle.resourceHandle] = std::make_unique<CommandList>(m_device.get(), commandPool, vk::Queue());
 		m_nextCommandListId += 1;
