@@ -101,7 +101,13 @@ namespace sm::gfx
 
 	bool create_command_list(CommandListHandle& outCommandListHandle, DeviceHandle deviceHandle, std::uint32_t queueIndex);
 	void destroy_command_list(DeviceHandle deviceHandle, CommandListHandle commandListHandle);
-	void submit_command_list(CommandListHandle commandListHandle, FenceHandle* outFenceHandle, SemaphoreHandle* outSemaphoreHandle);
+
+	struct SubmitInfo
+	{
+		CommandListHandle commandList;
+		SemaphoreHandle waitSemaphoreHandle;
+	};
+	void submit_command_list(const SubmitInfo& submitInfo, FenceHandle* outFenceHandle, SemaphoreHandle* outSemaphoreHandle);
 
 	enum class BufferType
 	{

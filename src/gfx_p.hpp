@@ -61,7 +61,7 @@ namespace sm::gfx
 
 		auto create_command_list(CommandListHandle& outCommandListHandle, std::uint32_t queueIndex) -> bool;
 		bool get_command_list(CommandList*& outCommandList, CommandListHandle commandListHandle);
-		bool submit_command_list(CommandListHandle commandListHandle, FenceHandle* outFenceHandle, SemaphoreHandle* outSemaphoreHandle);
+		bool submit_command_list(const SubmitInfo& submitInfo, FenceHandle* outFenceHandle, SemaphoreHandle* outSemaphoreHandle);
 
 		bool create_buffer(BufferHandle& outBufferHandle, const BufferInfo& bufferInfo);
 		void destroy_buffer(BufferHandle bufferHandle);

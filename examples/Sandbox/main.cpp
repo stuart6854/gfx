@@ -60,7 +60,11 @@ int main()
 		gfx::draw(commandListHandle, 3, 1, 0, 0);
 		gfx::end(commandListHandle);
 
-		gfx::submit_command_list(commandListHandle, nullptr, nullptr);
+		gfx::SubmitInfo submitInfo{
+			.commandList = commandListHandle,
+			.waitSemaphoreHandle = {}
+		};
+		gfx::submit_command_list(submitInfo, nullptr, nullptr);
 	}
 
 	gfx::destroy_buffer(bufferHandle);

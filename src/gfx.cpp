@@ -88,18 +88,18 @@ namespace sm::gfx
 	{
 	}
 
-	void submit_command_list(CommandListHandle commandListHandle, FenceHandle* outFenceHandle, SemaphoreHandle* outSemaphoreHandle)
+	void submit_command_list(const SubmitInfo& submitInfo, FenceHandle* outFenceHandle, SemaphoreHandle* outSemaphoreHandle)
 	{
 		GFX_ASSERT(s_context && s_context->is_valid(), "GFX has not been initialised!");
 
 		Device* device{ nullptr };
-		if (!s_context->get_device(device, commandListHandle.deviceHandle))
+		if (!s_context->get_device(device, submitInfo.commandList.deviceHandle))
 		{
 			return;
 		}
 		GFX_ASSERT(device != nullptr, "Device should not be null!");
 
-		device->submit_command_list(commandListHandle, outFenceHandle, outSemaphoreHandle);
+		device->submit_command_list(submitInfo, outFenceHandle, outSemaphoreHandle);
 	}
 
 	bool create_buffer(BufferHandle& outBufferHandle, DeviceHandle deviceHandle, const BufferInfo& bufferInfo)
@@ -456,9 +456,9 @@ namespace sm::gfx
 		return true;
 	}
 
-	bool Device::submit_command_list(CommandListHandle commandListHandle, FenceHandle* outFenceHandle, SemaphoreHandle* outSemaphoreHandle)
+	bool Device::submit_command_list(const SubmitInfo& submitInfo, FenceHandle* outFenceHandle, SemaphoreHandle* outSemaphoreHandle)
 	{
-		if (!m_commandListMap.contains(commandListHandle.resourceHandle))
+		if (!m_commandListMap.contains(submitInfo.commandList.resourceHandle))
 		{
 			return false;
 		}
@@ -475,12 +475,15 @@ namespace sm::gfx
 			// TODO: Create signalSemaphore
 		}
 
-		const auto& command_list = m_commandListMap.at(commandListHandle.resourceHandle);
+		const auto& command_list = m_commandListMap.at(submitInfo.commandList.resourceHandle);
 		auto command_buffer = command_list->get_command_buffer();
 
 		vk::SubmitInfo submit_info{};
 		submit_info.setCommandBuffers(command_buffer);
-		submit_info.setSignalSemaphores(signalSemaphore);
+		if (signalSemaphore)
+		{
+			submit_info.setSignalSemaphores(signalSemaphore);
+		}
 
 		auto queue = command_list->get_queue();
 		queue.submit(submit_info, fence);
