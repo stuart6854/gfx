@@ -5,10 +5,26 @@
 #include "gfx.hpp"
 
 #include <iostream>
+#include <fstream>
 
 #include <glfw/glfw3.h>
 
 using namespace sm;
+
+auto read_shader_file(const char* filename) -> std::vector<char>
+{
+	if (std::ifstream file{ filename, std::ios::binary | std::ios::ate })
+	{
+		const std::streamsize fileSize = file.tellg();
+		file.seekg(0);
+		std::vector<char> shaderBinary(fileSize);
+		file.read(shaderBinary.data(), fileSize);
+		return shaderBinary;
+	}
+
+	GFX_LOG_ERR_FMT("Example - Sandbox - Failed to read shader file: {}", filename);
+	return {};
+}
 
 int main()
 {
@@ -60,6 +76,8 @@ int main()
 		gfx::unmap_buffer(inBufferHandle);
 	}
 
+	const auto shaderBinary = read_shader_file("compute.spv");
+
 	gfx::CommandListHandle commandListHandle{};
 	if (!gfx::create_command_list(commandListHandle, deviceHandle, 0))
 	{
@@ -72,7 +90,6 @@ int main()
 
 		gfx::reset(commandListHandle);
 		gfx::begin(commandListHandle);
-		gfx::draw(commandListHandle, 3, 1, 0, 0);
 		gfx::end(commandListHandle);
 
 		gfx::SubmitInfo submitInfo{
