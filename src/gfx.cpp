@@ -342,7 +342,13 @@ namespace sm::gfx
 
 	bool Device::get_command_list(CommandList*& outCommandList, CommandListHandle commandListHandle)
 	{
-		return false;
+		if (!m_commandListMap.contains(commandListHandle.resourceHandle))
+		{
+			return false;
+		}
+
+		outCommandList = m_commandListMap.at(commandListHandle.resourceHandle).get();
+		return true;
 	}
 
 	bool Device::submit_command_list(CommandListHandle commandListHandle, FenceHandle* outFenceHandle, SemaphoreHandle* outSemaphoreHandle)
