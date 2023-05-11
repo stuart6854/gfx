@@ -86,8 +86,18 @@ namespace sm::gfx
 	{
 	}
 
-	void submit_command_list(CommandListHandle commandListHandle, FenceHandle* OutFenceHandle, SemaphoreHandle* OutSemaphoreHandle)
+	void submit_command_list(CommandListHandle commandListHandle, FenceHandle* outFenceHandle, SemaphoreHandle* outSemaphoreHandle)
 	{
+		GFX_ASSERT(s_context && s_context->is_valid(), "GFX has not been initialised!");
+
+		Device* device{ nullptr };
+		if (!s_context->get_device(device, commandListHandle.deviceHandle))
+		{
+			return;
+		}
+		GFX_ASSERT(device != nullptr, "Device should not be null!");
+
+		device->submit_command_list(commandListHandle, outFenceHandle, outSemaphoreHandle);
 	}
 
 #pragma region Command List Recording
@@ -103,18 +113,75 @@ namespace sm::gfx
 		}
 		GFX_ASSERT(device != nullptr, "Device should not be null!");
 
-		return false;
+		CommandList* commandList{ nullptr };
+		if (!device->get_command_list(commandList, commandListHandle))
+		{
+			return false;
+		}
+
+		commandList->begin();
+
+		return true;
 	}
 
 	void end(CommandListHandle commandListHandle)
 	{
+		GFX_ASSERT(s_context && s_context->is_valid(), "GFX has not been initialised!");
+
+		Device* device{ nullptr };
+		if (!s_context->get_device(device, commandListHandle.deviceHandle))
+		{
+			return;
+		}
+		GFX_ASSERT(device != nullptr, "Device should not be null!");
+
+		CommandList* commandList{ nullptr };
+		if (!device->get_command_list(commandList, commandListHandle))
+		{
+			return;
+		}
+
+		commandList->end();
 	}
 
 	void draw(CommandListHandle commandListHandle, std::uint32_t vertex_count, std::uint32_t instance_count, std::uint32_t first_vertex, std::uint32_t first_instance)
 	{
+		GFX_ASSERT(s_context && s_context->is_valid(), "GFX has not been initialised!");
+
+		Device* device{ nullptr };
+		if (!s_context->get_device(device, commandListHandle.deviceHandle))
+		{
+			return;
+		}
+		GFX_ASSERT(device != nullptr, "Device should not be null!");
+
+		CommandList* commandList{ nullptr };
+		if (!device->get_command_list(commandList, commandListHandle))
+		{
+			return;
+		}
+
+		commandList->draw(vertex_count, instance_count, first_vertex, first_instance);
 	}
+
 	void draw_indexed(CommandListHandle commandListHandle, std::uint32_t index_count, std::uint32_t instance_count, std::uint32_t first_index, std::int32_t vertex_offset, std::uint32_t first_instance)
 	{
+		GFX_ASSERT(s_context && s_context->is_valid(), "GFX has not been initialised!");
+
+		Device* device{ nullptr };
+		if (!s_context->get_device(device, commandListHandle.deviceHandle))
+		{
+			return;
+		}
+		GFX_ASSERT(device != nullptr, "Device should not be null!");
+
+		CommandList* commandList{ nullptr };
+		if (!device->get_command_list(commandList, commandListHandle))
+		{
+			return;
+		}
+
+		commandList->draw_indexed(index_count, instance_count, first_index, vertex_offset, first_instance);
 	}
 
 #pragma endregion
@@ -423,6 +490,7 @@ namespace sm::gfx
 
 		vk::CommandBufferBeginInfo cmd_begin_info{};
 		m_commandBuffer->begin(cmd_begin_info);
+		m_hasBegun = true;
 	}
 
 	void CommandList::end()

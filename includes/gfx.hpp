@@ -99,7 +99,7 @@ namespace sm::gfx
 	bool create_command_list(CommandListHandle& outCommandListHandle, DeviceHandle deviceHandle, std::uint32_t queueFlags);
 	void destroy_command_list(DeviceHandle deviceHandle, CommandListHandle commandListHandle);
 
-	void submit_command_list(CommandListHandle commandListHandle, FenceHandle* OutFenceHandle, SemaphoreHandle* OutSemaphoreHandle);
+	void submit_command_list(CommandListHandle commandListHandle, FenceHandle* outFenceHandle, SemaphoreHandle* outSemaphoreHandle);
 
 #pragma region Command List Recording
 

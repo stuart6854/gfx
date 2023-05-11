@@ -46,7 +46,9 @@ int main()
 	{
 		glfwPollEvents();
 
+		gfx::begin(commandListHandle);
 		gfx::draw(commandListHandle, 3, 1, 0, 0);
+		gfx::end(commandListHandle);
 
 		gfx::submit_command_list(commandListHandle, nullptr, nullptr);
 	}
