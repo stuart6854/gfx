@@ -103,6 +103,8 @@ namespace sm::gfx
 
 #pragma region Device Resources
 
+	void wait_on_fence(FenceHandle fenceHandle);
+
 	bool create_command_list(CommandListHandle& outCommandListHandle, DeviceHandle deviceHandle, std::uint32_t queueIndex);
 	void destroy_command_list(DeviceHandle deviceHandle, CommandListHandle commandListHandle);
 

@@ -59,6 +59,8 @@ namespace sm::gfx
 
 		bool is_valid() const;
 
+		void wait_on_fence(FenceHandle fenceHandle);
+
 		auto create_command_list(CommandListHandle& outCommandListHandle, std::uint32_t queueIndex) -> bool;
 		bool get_command_list(CommandList*& outCommandList, CommandListHandle commandListHandle);
 		bool submit_command_list(const SubmitInfo& submitInfo, FenceHandle* outFenceHandle, SemaphoreHandle* outSemaphoreHandle);
@@ -77,6 +79,8 @@ namespace sm::gfx
 		std::vector<std::uint32_t> m_queueFamilies;
 		std::vector<vk::Queue> m_queues;
 		std::unordered_map<std::uint32_t, vk::UniqueCommandPool> m_queueFamilyCommandPoolMap;
+
+		std::unordered_map<ResourceHandle, vk::UniqueFence> m_fenceMap;
 
 		std::unordered_map<ResourceHandle, std::unique_ptr<CommandList>> m_commandListMap;
 		std::uint32_t m_nextCommandListId{ 1 };

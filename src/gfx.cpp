@@ -70,6 +70,21 @@ namespace sm::gfx
 
 #pragma region Device Resources
 
+	void wait_on_fence(FenceHandle fenceHandle)
+	{
+		GFX_ASSERT(s_context && s_context->is_valid(), "GFX has not been initialised!");
+
+		Device* device{ nullptr };
+		if (!s_context->get_device(device, fenceHandle.deviceHandle))
+		{
+			s_errorCallback("gfx::wait_on_fence() - fenceHandle must be valid!");
+			return;
+		}
+		GFX_ASSERT(device != nullptr, "Device should not be null!");
+
+		device->wait_on_fence(fenceHandle);
+	}
+
 	bool create_command_list(CommandListHandle& outCommandListHandle, DeviceHandle deviceHandle, std::uint32_t queueIndex)
 	{
 		GFX_ASSERT(s_context && s_context->is_valid(), "GFX has not been initialised!");
@@ -448,6 +463,15 @@ namespace sm::gfx
 	bool Device::is_valid() const
 	{
 		return static_cast<bool>(*m_device);
+	}
+
+	void Device::wait_on_fence(FenceHandle fenceHandle)
+	{
+		vk::Fence fence = m_fenceMap.at(fenceHandle.resourceHandle).get();
+		auto result = m_device->waitForFences(fence, VK_TRUE, std::numeric_limits<std::uint64_t>::max());
+		GFX_UNUSED(result);
+
+		m_fenceMap.erase(fenceHandle.resourceHandle);
 	}
 
 	auto Device::create_command_list(CommandListHandle& outCommandListHandle, std::uint32_t queueIndex) -> bool

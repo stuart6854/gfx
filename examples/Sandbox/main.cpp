@@ -65,7 +65,9 @@ int main()
 			.commandList = commandListHandle,
 			.waitSemaphoreHandle = {}
 		};
-		gfx::submit_command_list(submitInfo, nullptr, nullptr);
+		gfx::FenceHandle fenceHandle;
+		gfx::submit_command_list(submitInfo, &fenceHandle, nullptr);
+		gfx::wait_on_fence(fenceHandle);
 	}
 
 	gfx::destroy_buffer(bufferHandle);
