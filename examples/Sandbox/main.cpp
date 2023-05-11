@@ -47,7 +47,7 @@ int main()
 	}
 
 	gfx::CommandListHandle commandListHandle{};
-	if (!gfx::create_command_list(commandListHandle, deviceHandle, gfx::QueueFlags_Graphics))
+	if (!gfx::create_command_list(commandListHandle, deviceHandle, 0))
 	{
 		throw std::runtime_error("Failed to create GFX command list!");
 	}

@@ -91,7 +91,7 @@ namespace sm::gfx
 	struct DeviceInfo
 	{
 		std::uint32_t deviceFlags;			   // Properties used to help choose a device
-		std::vector<std::uint32_t> queueFlags; // The queues required and their capabilities
+		std::vector<std::uint32_t> queueFlags; // The wanted queue types (The indices of the queues will be used for queue-related operations)
 	};
 
 	bool create_device(DeviceHandle& outDeviceHandle, const DeviceInfo& deviceInfo);
@@ -99,7 +99,7 @@ namespace sm::gfx
 
 #pragma region Device Resources
 
-	bool create_command_list(CommandListHandle& outCommandListHandle, DeviceHandle deviceHandle, std::uint32_t queueFlags);
+	bool create_command_list(CommandListHandle& outCommandListHandle, DeviceHandle deviceHandle, std::uint32_t queueIndex);
 	void destroy_command_list(DeviceHandle deviceHandle, CommandListHandle commandListHandle);
 	void submit_command_list(CommandListHandle commandListHandle, FenceHandle* outFenceHandle, SemaphoreHandle* outSemaphoreHandle);
 

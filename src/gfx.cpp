@@ -70,7 +70,7 @@ namespace sm::gfx
 
 #pragma region Device Resources
 
-	bool create_command_list(CommandListHandle& outCommandListHandle, DeviceHandle deviceHandle, std::uint32_t queueFlags)
+	bool create_command_list(CommandListHandle& outCommandListHandle, DeviceHandle deviceHandle, std::uint32_t queueIndex)
 	{
 		GFX_ASSERT(s_context && s_context->is_valid(), "GFX has not been initialised!");
 
@@ -81,7 +81,7 @@ namespace sm::gfx
 		}
 		GFX_ASSERT(device != nullptr, "Device should not be null!");
 
-		return device->create_command_list(outCommandListHandle, queueFlags);
+		return device->create_command_list(outCommandListHandle, queueIndex);
 	}
 
 	void destroy_command_list(DeviceHandle deviceHandle, CommandListHandle commandListHandle)
@@ -346,30 +346,36 @@ namespace sm::gfx
 
 		auto queueProperties = m_physicalDevice.getQueueFamilyProperties();
 
+		m_queueFlags = deviceInfo.queueFlags;
+		m_queueFamilies.resize(m_queueFlags.size());
+		m_queues.resize(m_queueFlags.size());
+
 		std::unordered_map<std::uint32_t, std::uint32_t> usedQueueFamilyCounts;
-		for (auto queue_flags : deviceInfo.queueFlags)
+		for (auto i = 0; i < deviceInfo.queueFlags.size(); ++i)
 		{
-			vk::QueueFlags wanted_flags;
-			if (queue_flags & QueueFlags_Graphics)
+			const auto queueFlags = deviceInfo.queueFlags[i];
+
+			vk::QueueFlags wantedFlags;
+			if (queueFlags & QueueFlags_Graphics)
 			{
-				wanted_flags |= vk::QueueFlagBits::eGraphics;
+				wantedFlags |= vk::QueueFlagBits::eGraphics;
 			}
-			if (queue_flags & QueueFlags_Compute)
+			if (queueFlags & QueueFlags_Compute)
 			{
-				wanted_flags |= vk::QueueFlagBits::eCompute;
+				wantedFlags |= vk::QueueFlagBits::eCompute;
 			}
-			if (queue_flags & QueueFlags_Transfer)
+			if (queueFlags & QueueFlags_Transfer)
 			{
-				wanted_flags |= vk::QueueFlagBits::eTransfer;
+				wantedFlags |= vk::QueueFlagBits::eTransfer;
 			}
 
-			for (auto i = 0; i < queueProperties.size(); ++i)
+			for (auto familyIndex = 0; familyIndex < queueProperties.size(); ++familyIndex)
 			{
-				auto& queueProps = queueProperties[i];
-				if (queueProps.queueFlags & wanted_flags)
+				auto& queueProps = queueProperties[familyIndex];
+				if (queueProps.queueFlags & wantedFlags)
 				{
-					usedQueueFamilyCounts[i] += 1;
-					m_queueFlagsQueueFamilyMap[queue_flags] = i;
+					usedQueueFamilyCounts[familyIndex] += 1;
+					m_queueFamilies[i] = familyIndex;
 					break;
 				}
 			}
@@ -397,15 +403,17 @@ namespace sm::gfx
 		VULKAN_HPP_DEFAULT_DISPATCHER.init(*m_device);
 
 		std::unordered_map<std::uint32_t, std::uint32_t> queueIndexMap;
-		for (auto [queueFlags, queueFamily] : m_queueFlagsQueueFamilyMap)
+		for (auto i = 0; i < m_queueFamilies.size(); ++i)
 		{
+			auto queueFamily = m_queueFamilies[i];
+
 			vk::CommandPoolCreateInfo cmd_pool_info{};
 			cmd_pool_info.setQueueFamilyIndex(queueFamily);
 			cmd_pool_info.setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer);
 			m_queueFamilyCommandPoolMap[queueFamily] = m_device->createCommandPoolUnique(cmd_pool_info);
 
 			auto queueIndex = queueIndexMap[queueFamily];
-			m_queueFlagsQueueMap[queueFlags] = m_device->getQueue(queueFamily, queueIndex);
+			m_queues[i] = m_device->getQueue(queueFamily, queueIndex);
 			queueIndexMap[queueFamily] += 1;
 		}
 
@@ -422,14 +430,15 @@ namespace sm::gfx
 		return static_cast<bool>(*m_device);
 	}
 
-	auto Device::create_command_list(CommandListHandle& outCommandListHandle, std::uint32_t queueFlags) -> bool
+	auto Device::create_command_list(CommandListHandle& outCommandListHandle, std::uint32_t queueIndex) -> bool
 	{
-		auto queueFamily = m_queueFlagsQueueFamilyMap.at(queueFlags);
+		auto queueFamily = m_queueFamilies.at(queueIndex);
 		auto commandPool = m_queueFamilyCommandPoolMap.at(queueFamily).get();
+		auto queue = m_queues.at(queueIndex);
 
 		CommandListHandle commandListHandle(m_deviceHandle, ResourceHandle(m_nextCommandListId));
 
-		m_commandListMap[commandListHandle.resourceHandle] = std::make_unique<CommandList>(m_device.get(), commandPool, vk::Queue());
+		m_commandListMap[commandListHandle.resourceHandle] = std::make_unique<CommandList>(m_device.get(), commandPool, queue);
 		m_nextCommandListId += 1;
 
 		outCommandListHandle = commandListHandle;

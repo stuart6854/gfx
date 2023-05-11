@@ -59,7 +59,7 @@ namespace sm::gfx
 
 		bool is_valid() const;
 
-		auto create_command_list(CommandListHandle& outCommandListHandle, std::uint32_t queueFlags) -> bool;
+		auto create_command_list(CommandListHandle& outCommandListHandle, std::uint32_t queueIndex) -> bool;
 		bool get_command_list(CommandList*& outCommandList, CommandListHandle commandListHandle);
 		bool submit_command_list(CommandListHandle commandListHandle, FenceHandle* outFenceHandle, SemaphoreHandle* outSemaphoreHandle);
 
@@ -73,9 +73,10 @@ namespace sm::gfx
 		vk::UniqueDevice m_device;
 		vma::UniqueAllocator m_allocator;
 
-		std::unordered_map<std::uint32_t, std::uint32_t> m_queueFlagsQueueFamilyMap;
+		std::vector<std::uint32_t> m_queueFlags;
+		std::vector<std::uint32_t> m_queueFamilies;
+		std::vector<vk::Queue> m_queues;
 		std::unordered_map<std::uint32_t, vk::UniqueCommandPool> m_queueFamilyCommandPoolMap;
-		std::unordered_map<std::uint32_t, vk::Queue> m_queueFlagsQueueMap;
 
 		std::unordered_map<ResourceHandle, std::unique_ptr<CommandList>> m_commandListMap;
 		std::uint32_t m_nextCommandListId{ 1 };
