@@ -70,6 +70,7 @@ namespace sm::gfx
 	GFX_DEFINE_RESOURCE_HANDLE(CommandListHandle);
 	GFX_DEFINE_RESOURCE_HANDLE(FenceHandle);
 	GFX_DEFINE_RESOURCE_HANDLE(SemaphoreHandle);
+	GFX_DEFINE_RESOURCE_HANDLE(BufferHandle);
 
 	void set_error_callback(std::function<void(const char* msg)> callback);
 
@@ -96,10 +97,25 @@ namespace sm::gfx
 	bool create_device(DeviceHandle& outDeviceHandle, const DeviceInfo& deviceInfo);
 	void destroy_device(DeviceHandle deviceHandle);
 
+#pragma region Device Resources
+
 	bool create_command_list(CommandListHandle& outCommandListHandle, DeviceHandle deviceHandle, std::uint32_t queueFlags);
 	void destroy_command_list(DeviceHandle deviceHandle, CommandListHandle commandListHandle);
-
 	void submit_command_list(CommandListHandle commandListHandle, FenceHandle* outFenceHandle, SemaphoreHandle* outSemaphoreHandle);
+
+	enum class BufferType
+	{
+		eStorage,
+	};
+	struct BufferInfo
+	{
+		BufferType type;
+		std::uint64_t size;
+	};
+	bool create_buffer(BufferHandle& outBufferHandle, DeviceHandle deviceHandle, const BufferInfo& bufferInfo);
+	void destroy_buffer(BufferHandle bufferHandle);
+
+#pragma endregion
 
 #pragma region Command List Recording
 

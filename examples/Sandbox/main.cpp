@@ -36,6 +36,16 @@ int main()
 		throw std::runtime_error("Failed to create GFX device!");
 	}
 
+	gfx::BufferHandle bufferHandle{};
+	gfx::BufferInfo bufferInfo{
+		.type = gfx::BufferType::eStorage,
+		.size = sizeof(int) * 10,
+	};
+	if (!gfx::create_buffer(bufferHandle, deviceHandle, bufferInfo))
+	{
+		throw std::runtime_error("Failed to create GFX buffer!");
+	}
+
 	gfx::CommandListHandle commandListHandle{};
 	if (!gfx::create_command_list(commandListHandle, deviceHandle, gfx::QueueFlags_Graphics))
 	{
@@ -52,6 +62,8 @@ int main()
 
 		gfx::submit_command_list(commandListHandle, nullptr, nullptr);
 	}
+
+	gfx::destroy_buffer(bufferHandle);
 
 	gfx::destroy_device(deviceHandle);
 	gfx::shutdown();

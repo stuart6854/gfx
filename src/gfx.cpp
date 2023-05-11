@@ -68,6 +68,8 @@ namespace sm::gfx
 		s_context->destroy_device(deviceHandle);
 	}
 
+#pragma region Device Resources
+
 	bool create_command_list(CommandListHandle& outCommandListHandle, DeviceHandle deviceHandle, std::uint32_t queueFlags)
 	{
 		GFX_ASSERT(s_context && s_context->is_valid(), "GFX has not been initialised!");
@@ -99,6 +101,26 @@ namespace sm::gfx
 
 		device->submit_command_list(commandListHandle, outFenceHandle, outSemaphoreHandle);
 	}
+
+	bool create_buffer(BufferHandle& outBufferHandle, DeviceHandle deviceHandle, const BufferInfo& bufferInfo)
+	{
+		GFX_ASSERT(s_context && s_context->is_valid(), "GFX has not been initialised!");
+
+		Device* device{ nullptr };
+		if (!s_context->get_device(device, deviceHandle))
+		{
+			return false;
+		}
+		GFX_ASSERT(device != nullptr, "Device should not be null!");
+
+		return device->create_buffer(outBufferHandle, bufferInfo);
+	}
+
+	void destroy_buffer(BufferHandle bufferHandle)
+	{
+	}
+
+#pragma endregion
 
 #pragma region Command List Recording
 
@@ -386,6 +408,13 @@ namespace sm::gfx
 			m_queueFlagsQueueMap[queueFlags] = m_device->getQueue(queueFamily, queueIndex);
 			queueIndexMap[queueFamily] += 1;
 		}
+
+		vma::AllocatorCreateInfo allocator_info{};
+		allocator_info.setInstance(instance);
+		allocator_info.setPhysicalDevice(m_physicalDevice);
+		allocator_info.setDevice(m_device.get());
+		allocator_info.setVulkanApiVersion(VK_API_VERSION_1_3);
+		m_allocator = vma::createAllocatorUnique(allocator_info);
 	}
 
 	bool Device::is_valid() const
@@ -448,6 +477,21 @@ namespace sm::gfx
 		queue.submit(submit_info, fence);
 
 		return true;
+	}
+
+	bool Device::create_buffer(BufferHandle& outBufferHandle, const BufferInfo& bufferInfo)
+	{
+		BufferHandle bufferHandle(m_deviceHandle, ResourceHandle(m_nextBufferId));
+
+		m_bufferMap[bufferHandle.resourceHandle] = std::make_unique<Buffer>(m_device.get(), m_allocator.get(), bufferInfo);
+		m_nextBufferId += 1;
+
+		outBufferHandle = bufferHandle;
+		return true;
+	}
+
+	void Device::destroy_buffer(BufferHandle bufferHandle)
+	{
 	}
 
 	CommandList::CommandList(vk::Device device, vk::CommandPool commandPool, vk::Queue queue)
@@ -530,6 +574,39 @@ namespace sm::gfx
 		std::swap(m_commandPool, rhs.m_commandPool);
 		std::swap(m_queue, rhs.m_queue);
 		std::swap(m_commandBuffer, rhs.m_commandBuffer);
+		return *this;
+	}
+
+	Buffer::Buffer(vk::Device device, vma::Allocator allocator, const BufferInfo& bufferInfo)
+		: m_device(device), m_allocator(allocator)
+	{
+		vk::BufferCreateInfo vk_buffer_info{};
+		vk_buffer_info.setUsage(vk::BufferUsageFlagBits::eStorageBuffer); // #TODO: Make optional.
+		vk_buffer_info.setSize(bufferInfo.size);
+		vk_buffer_info.setSharingMode(vk::SharingMode::eExclusive);
+		//		vk_buffer_info.setQueueFamilyIndices(); // #TODO: Add later?
+
+		vma::AllocationCreateInfo alloc_info{};
+		alloc_info.setUsage(vma::MemoryUsage::eAutoPreferDevice);						// #TODO: Make optional.
+		alloc_info.setFlags(vma::AllocationCreateFlagBits::eHostAccessSequentialWrite); // #TODO: Optional.
+
+		std::tie(m_buffer, m_allocation) = m_allocator.createBufferUnique(vk_buffer_info, alloc_info);
+	}
+
+	Buffer::Buffer(Buffer&& other) noexcept
+	{
+		std::swap(m_device, other.m_device);
+		std::swap(m_allocation, other.m_allocation);
+		std::swap(m_buffer, other.m_buffer);
+		std::swap(m_allocation, other.m_allocation);
+	}
+
+	auto Buffer::operator=(Buffer&& rhs) noexcept -> Buffer&
+	{
+		std::swap(m_device, rhs.m_device);
+		std::swap(m_allocation, rhs.m_allocation);
+		std::swap(m_buffer, rhs.m_buffer);
+		std::swap(m_allocation, rhs.m_allocation);
 		return *this;
 	}
 

@@ -9,6 +9,8 @@
 
 #define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
 #include <vulkan/vulkan.hpp>
+#define VMA_IMPLEMENTATION
+#include <vulkan-memory-allocator-hpp/vk_mem_alloc.hpp>
 
 #include <memory>
 #include <unordered_map>
@@ -45,6 +47,7 @@ namespace sm::gfx
 	};
 
 	class CommandList;
+	class Buffer;
 
 	class Device
 	{
@@ -60,11 +63,15 @@ namespace sm::gfx
 		bool get_command_list(CommandList*& outCommandList, CommandListHandle commandListHandle);
 		bool submit_command_list(CommandListHandle commandListHandle, FenceHandle* outFenceHandle, SemaphoreHandle* outSemaphoreHandle);
 
+		bool create_buffer(BufferHandle& outBufferHandle, const BufferInfo& bufferInfo);
+		void destroy_buffer(BufferHandle bufferHandle);
+
 	private:
 		DeviceHandle m_deviceHandle;
 
 		vk::PhysicalDevice m_physicalDevice;
 		vk::UniqueDevice m_device;
+		vma::UniqueAllocator m_allocator;
 
 		std::unordered_map<std::uint32_t, std::uint32_t> m_queueFlagsQueueFamilyMap;
 		std::unordered_map<std::uint32_t, vk::UniqueCommandPool> m_queueFamilyCommandPoolMap;
@@ -72,6 +79,9 @@ namespace sm::gfx
 
 		std::unordered_map<ResourceHandle, std::unique_ptr<CommandList>> m_commandListMap;
 		std::uint32_t m_nextCommandListId{ 1 };
+
+		std::unordered_map<ResourceHandle, std::unique_ptr<Buffer>> m_bufferMap;
+		std::uint32_t m_nextBufferId{ 1 };
 	};
 
 	class CommandList
@@ -111,6 +121,30 @@ namespace sm::gfx
 		vk::UniqueCommandBuffer m_commandBuffer;
 
 		bool m_hasBegun{ false };
+	};
+
+	class Buffer
+	{
+	public:
+		Buffer() = default;
+		explicit Buffer(vk::Device device, vma::Allocator allocator, const BufferInfo& bufferInfo);
+		Buffer(Buffer&& other) noexcept;
+		~Buffer() = default;
+
+		GFX_DISABLE_COPY(Buffer);
+
+		/* Getters */
+
+		/* Operators */
+
+		auto operator=(Buffer&& rhs) noexcept -> Buffer&;
+
+	private:
+		vk::Device m_device;
+		vma::Allocator m_allocator;
+
+		vma::UniqueBuffer m_buffer;
+		vma::UniqueAllocation m_allocation;
 	};
 
 } // namespace sm::gfx
