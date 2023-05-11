@@ -81,12 +81,12 @@ namespace sm::gfx
 	bool initialise(const AppInfo& appInfo);
 	void shutdown();
 
-	constexpr std::uint32_t DeviceFlags_PreferDiscrete = 1 << 0;   // The device is typically a separate processor connected to the host
-	constexpr std::uint32_t DeviceFlags_PreferIntegrated = 1 << 1; // The device is typically one embedded or tightly couple with the host
+	constexpr std::uint32_t DeviceFlags_PreferDiscrete = 1u << 0u;	 // The device is typically a separate processor connected to the host
+	constexpr std::uint32_t DeviceFlags_PreferIntegrated = 1u << 1u; // The device is typically one embedded or tightly couple with the host
 
-	constexpr std::uint32_t QueueFlags_Graphics = 1 << 0;
-	constexpr std::uint32_t QueueFlags_Compute = 1 << 1;
-	constexpr std::uint32_t QueueFlags_Transfer = 1 << 2;
+	constexpr std::uint32_t QueueFlags_Graphics = 1u << 0u;
+	constexpr std::uint32_t QueueFlags_Compute = 1u << 1u;
+	constexpr std::uint32_t QueueFlags_Transfer = 1u << 2u;
 
 	struct DeviceInfo
 	{
