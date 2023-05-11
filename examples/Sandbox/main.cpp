@@ -37,11 +37,16 @@ int main()
 	}
 
 	gfx::BufferHandle inBufferHandle{};
+	gfx::BufferHandle outBufferHandle{};
 	gfx::BufferInfo bufferInfo{
 		.type = gfx::BufferType::eStorage,
 		.size = sizeof(int) * 10,
 	};
 	if (!gfx::create_buffer(inBufferHandle, deviceHandle, bufferInfo))
+	{
+		throw std::runtime_error("Failed to create GFX buffer!");
+	}
+	if (!gfx::create_buffer(outBufferHandle, deviceHandle, bufferInfo))
 	{
 		throw std::runtime_error("Failed to create GFX buffer!");
 	}
@@ -81,6 +86,7 @@ int main()
 	}
 
 	gfx::destroy_buffer(inBufferHandle);
+	gfx::destroy_buffer(outBufferHandle);
 
 	gfx::destroy_device(deviceHandle);
 	gfx::shutdown();
