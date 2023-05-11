@@ -126,6 +126,8 @@ namespace sm::gfx
 	};
 	bool create_buffer(BufferHandle& outBufferHandle, DeviceHandle deviceHandle, const BufferInfo& bufferInfo);
 	void destroy_buffer(BufferHandle bufferHandle);
+	bool map_buffer(BufferHandle bufferHandle, void*& outBufferPtr);
+	void unmap_buffer(BufferHandle bufferHandle);
 
 #pragma endregion
 

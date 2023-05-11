@@ -36,14 +36,23 @@ int main()
 		throw std::runtime_error("Failed to create GFX device!");
 	}
 
-	gfx::BufferHandle bufferHandle{};
+	gfx::BufferHandle inBufferHandle{};
 	gfx::BufferInfo bufferInfo{
 		.type = gfx::BufferType::eStorage,
 		.size = sizeof(int) * 10,
 	};
-	if (!gfx::create_buffer(bufferHandle, deviceHandle, bufferInfo))
+	if (!gfx::create_buffer(inBufferHandle, deviceHandle, bufferInfo))
 	{
 		throw std::runtime_error("Failed to create GFX buffer!");
+	}
+	std::int32_t* inBufferPtr{ nullptr };
+	if (gfx::map_buffer(inBufferHandle, reinterpret_cast<void*&>(inBufferPtr)))
+	{
+		for (auto i = 0; i < 10; ++i)
+		{
+			inBufferPtr[i] = i;
+		}
+		gfx::unmap_buffer(inBufferHandle);
 	}
 
 	gfx::CommandListHandle commandListHandle{};
@@ -67,10 +76,11 @@ int main()
 		};
 		gfx::FenceHandle fenceHandle;
 		gfx::submit_command_list(submitInfo, &fenceHandle, nullptr);
+
 		gfx::wait_on_fence(fenceHandle);
 	}
 
-	gfx::destroy_buffer(bufferHandle);
+	gfx::destroy_buffer(inBufferHandle);
 
 	gfx::destroy_device(deviceHandle);
 	gfx::shutdown();

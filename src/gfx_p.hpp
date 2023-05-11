@@ -67,6 +67,8 @@ namespace sm::gfx
 
 		bool create_buffer(BufferHandle& outBufferHandle, const BufferInfo& bufferInfo);
 		void destroy_buffer(BufferHandle bufferHandle);
+		bool map_buffer(BufferHandle bufferHandle, void*& outBufferPtr);
+		void unmap_buffer(BufferHandle bufferHandle);
 
 	private:
 		auto create_fence() -> FenceHandle;
@@ -143,6 +145,9 @@ namespace sm::gfx
 		GFX_DISABLE_COPY(Buffer);
 
 		/* Getters */
+
+		auto get_buffer() const -> vk::Buffer { return m_buffer.get(); }
+		auto get_allocation() const -> vma::Allocation { return m_allocation.get(); }
 
 		/* Operators */
 

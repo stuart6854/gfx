@@ -135,6 +135,34 @@ namespace sm::gfx
 	{
 	}
 
+	bool map_buffer(BufferHandle bufferHandle, void*& outBufferPtr)
+	{
+		GFX_ASSERT(s_context && s_context->is_valid(), "GFX has not been initialised!");
+
+		Device* device{ nullptr };
+		if (!s_context->get_device(device, bufferHandle.deviceHandle))
+		{
+			return false;
+		}
+		GFX_ASSERT(device != nullptr, "Device should not be null!");
+
+		return device->map_buffer(bufferHandle, outBufferPtr);
+	}
+
+	void unmap_buffer(BufferHandle bufferHandle)
+	{
+		GFX_ASSERT(s_context && s_context->is_valid(), "GFX has not been initialised!");
+
+		Device* device{ nullptr };
+		if (!s_context->get_device(device, bufferHandle.deviceHandle))
+		{
+			return;
+		}
+		GFX_ASSERT(device != nullptr, "Device should not be null!");
+
+		device->unmap_buffer(bufferHandle);
+	}
+
 #pragma endregion
 
 #pragma region Command List Recording
@@ -549,6 +577,30 @@ namespace sm::gfx
 
 	void Device::destroy_buffer(BufferHandle bufferHandle)
 	{
+	}
+
+	bool Device::map_buffer(BufferHandle bufferHandle, void*& outBufferPtr)
+	{
+		if (!m_bufferMap.contains(bufferHandle.resourceHandle))
+		{
+			return false;
+		}
+
+		const auto& buffer = m_bufferMap.at(bufferHandle.resourceHandle);
+
+		outBufferPtr = m_allocator->mapMemory(buffer->get_allocation());
+		return outBufferPtr != nullptr;
+	}
+
+	void Device::unmap_buffer(BufferHandle bufferHandle)
+	{
+		if (!m_bufferMap.contains(bufferHandle.resourceHandle))
+		{
+			return;
+		}
+
+		const auto& buffer = m_bufferMap.at(bufferHandle.resourceHandle);
+		m_allocator->unmapMemory(buffer->get_allocation());
 	}
 
 	auto Device::create_fence() -> FenceHandle
