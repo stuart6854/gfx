@@ -299,11 +299,11 @@ namespace sm::gfx
 
 			std::uint32_t score = 0;
 
-			if ((deviceInfo.deviceFlags & DeviceFlags_PreferIntegrated) == 1 && deviceProperties.deviceType == vk::PhysicalDeviceType::eIntegratedGpu)
+			if (deviceInfo.deviceFlags & DeviceFlags_PreferIntegrated && deviceProperties.deviceType == vk::PhysicalDeviceType::eIntegratedGpu)
 			{
 				score += 1000;
 			}
-			if ((deviceInfo.deviceFlags & DeviceFlags_PreferDiscrete) == 1 && deviceProperties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu)
+			if (deviceInfo.deviceFlags & DeviceFlags_PreferDiscrete && deviceProperties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu)
 			{
 				score += 1000;
 			}
