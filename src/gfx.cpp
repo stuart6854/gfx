@@ -510,7 +510,8 @@ namespace sm::gfx
 		vk::Fence fence{};
 		if (outFenceHandle != nullptr)
 		{
-			// #TODO: Create fence
+			*outFenceHandle = create_fence();
+			fence = m_fenceMap.at(outFenceHandle->resourceHandle).get();
 		}
 
 		vk::Semaphore signalSemaphore{};
@@ -548,6 +549,17 @@ namespace sm::gfx
 
 	void Device::destroy_buffer(BufferHandle bufferHandle)
 	{
+	}
+
+	auto Device::create_fence() -> FenceHandle
+	{
+		auto fenceHandle = FenceHandle(m_deviceHandle, ResourceHandle(m_nextFenceId));
+
+		vk::FenceCreateInfo fence_info{};
+		m_fenceMap[fenceHandle.resourceHandle] = m_device->createFenceUnique(fence_info);
+
+		m_nextFenceId += 1;
+		return fenceHandle;
 	}
 
 	CommandList::CommandList(vk::Device device, vk::CommandPool commandPool, vk::Queue queue)

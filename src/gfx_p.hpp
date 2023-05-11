@@ -69,6 +69,9 @@ namespace sm::gfx
 		void destroy_buffer(BufferHandle bufferHandle);
 
 	private:
+		auto create_fence() -> FenceHandle;
+
+	private:
 		DeviceHandle m_deviceHandle;
 
 		vk::PhysicalDevice m_physicalDevice;
@@ -81,6 +84,7 @@ namespace sm::gfx
 		std::unordered_map<std::uint32_t, vk::UniqueCommandPool> m_queueFamilyCommandPoolMap;
 
 		std::unordered_map<ResourceHandle, vk::UniqueFence> m_fenceMap;
+		std::uint32_t m_nextFenceId{ 1 };
 
 		std::unordered_map<ResourceHandle, std::unique_ptr<CommandList>> m_commandListMap;
 		std::uint32_t m_nextCommandListId{ 1 };
