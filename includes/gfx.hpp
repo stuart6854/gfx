@@ -9,6 +9,10 @@
 #include <functional>
 #include <string_view>
 
+#ifndef GFX_UNUSED
+	#define GFX_UNUSED(_x) (void)(_x)
+#endif
+
 #ifndef GFX_LOG_ERR
 	#include <iostream>
 	#include <format>
