@@ -124,6 +124,26 @@ namespace sm::gfx
 
 #pragma region Command List Recording
 
+	void reset(CommandListHandle commandListHandle)
+	{
+		GFX_ASSERT(s_context && s_context->is_valid(), "GFX has not been initialised!");
+
+		Device* device{ nullptr };
+		if (!s_context->get_device(device, commandListHandle.deviceHandle))
+		{
+			return;
+		}
+		GFX_ASSERT(device != nullptr, "Device should not be null!");
+
+		CommandList* commandList{ nullptr };
+		if (!device->get_command_list(commandList, commandListHandle))
+		{
+			return;
+		}
+
+		commandList->reset();
+	}
+
 	bool begin(CommandListHandle commandListHandle)
 	{
 		GFX_ASSERT(s_context && s_context->is_valid(), "GFX has not been initialised!");
@@ -532,7 +552,7 @@ namespace sm::gfx
 
 	void CommandList::reset()
 	{
-		m_commandBuffer.reset();
+		m_commandBuffer->reset();
 		m_hasBegun = false;
 	}
 
@@ -586,6 +606,7 @@ namespace sm::gfx
 		std::swap(m_commandPool, rhs.m_commandPool);
 		std::swap(m_queue, rhs.m_queue);
 		std::swap(m_commandBuffer, rhs.m_commandBuffer);
+		std::swap(m_hasBegun, rhs.m_hasBegun);
 		return *this;
 	}
 

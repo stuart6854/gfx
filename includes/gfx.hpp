@@ -125,6 +125,8 @@ namespace sm::gfx
 
 #pragma region Command List Recording
 
+	void reset(CommandListHandle commandListHandle);
+
 	bool begin(CommandListHandle commandListHandle);
 	void end(CommandListHandle commandListHandle);
 

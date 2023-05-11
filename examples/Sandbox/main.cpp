@@ -56,6 +56,7 @@ int main()
 	{
 		glfwPollEvents();
 
+		gfx::reset(commandListHandle);
 		gfx::begin(commandListHandle);
 		gfx::draw(commandListHandle, 3, 1, 0, 0);
 		gfx::end(commandListHandle);
