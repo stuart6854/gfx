@@ -89,6 +89,8 @@ namespace sm::gfx
 		std::vector<vk::Queue> m_queues;
 		std::unordered_map<std::uint32_t, vk::UniqueCommandPool> m_queueFamilyCommandPoolMap;
 
+		vk::UniqueDescriptorPool m_descriptorPool;
+
 		std::unordered_map<ResourceHandle, vk::UniqueFence> m_fenceMap;
 		std::uint32_t m_nextFenceId{ 1 };
 

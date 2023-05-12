@@ -504,6 +504,16 @@ namespace sm::gfx
 		allocator_info.setDevice(m_device.get());
 		allocator_info.setVulkanApiVersion(VK_API_VERSION_1_3);
 		m_allocator = vma::createAllocatorUnique(allocator_info);
+
+		const std::vector<vk::DescriptorPoolSize> descriptor_pool_sizes{
+			{ vk::DescriptorType::eStorageBuffer, 100 },
+			{ vk::DescriptorType::eUniformBuffer, 100 },
+			{ vk::DescriptorType::eCombinedImageSampler, 100 },
+		};
+		vk::DescriptorPoolCreateInfo descriptor_pool_info{};
+		descriptor_pool_info.setMaxSets(100);
+		descriptor_pool_info.setPoolSizes(descriptor_pool_sizes);
+		m_descriptorPool = m_device->createDescriptorPoolUnique(descriptor_pool_info);
 	}
 
 	bool Device::is_valid() const
