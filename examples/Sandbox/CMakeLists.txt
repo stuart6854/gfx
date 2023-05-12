@@ -10,7 +10,5 @@ add_custom_target(gfx_example_sandbox_shader DEPENDS "${CMAKE_CURRENT_BINARY_DIR
 add_executable(gfx_example_sandbox main.cpp)
 
 target_link_libraries(gfx_example_sandbox PRIVATE gfx)
-target_link_libraries(gfx_example_sandbox PRIVATE glm::glm)
-target_link_libraries(gfx_example_sandbox PRIVATE glfw)
 
 add_dependencies(gfx_example_sandbox gfx_example_sandbox_shader)

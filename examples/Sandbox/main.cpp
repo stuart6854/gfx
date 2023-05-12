@@ -7,8 +7,6 @@
 #include <iostream>
 #include <fstream>
 
-#include <glfw/glfw3.h>
-
 using namespace sm;
 
 auto read_shader_file(const char* filename) -> std::vector<char>
@@ -28,9 +26,6 @@ auto read_shader_file(const char* filename) -> std::vector<char>
 
 int main()
 {
-	glfwInit();
-	auto* window = glfwCreateWindow(1080, 720, "GFX", nullptr, nullptr);
-
 	gfx::set_error_callback([](const char* msg) {
 		GFX_LOG_ERR(msg);
 		GFX_ASSERT(false, "");
@@ -98,7 +93,7 @@ int main()
 		throw std::runtime_error("Failed to create GFX descriptor set!");
 	}
 	gfx::bind_buffer_to_descriptor_set(descriptorSetHandle, 0, inBufferHandle);
-	gfx::bind_buffer_to_descriptor_set(descriptorSetHandle, 1, inBufferHandle);
+	gfx::bind_buffer_to_descriptor_set(descriptorSetHandle, 1, outBufferHandle);
 
 	gfx::CommandListHandle commandListHandle{};
 	if (!gfx::create_command_list(commandListHandle, deviceHandle, 0))
@@ -106,25 +101,40 @@ int main()
 		throw std::runtime_error("Failed to create GFX command list!");
 	}
 
-	while (glfwWindowShouldClose(window) == 0)
+	gfx::reset(commandListHandle);
+	gfx::begin(commandListHandle);
+	gfx::bind_pipeline(commandListHandle, pipelineHandle);
+	gfx::bind_descriptor_set(commandListHandle, descriptorSetHandle);
+	gfx::dispatch(commandListHandle, 10, 1, 1);
+	gfx::end(commandListHandle);
+
+	gfx::SubmitInfo submitInfo{
+		.commandList = commandListHandle,
+		.waitSemaphoreHandle = {}
+	};
+	gfx::FenceHandle fenceHandle;
+	gfx::submit_command_list(submitInfo, &fenceHandle, nullptr);
+
+	gfx::wait_on_fence(fenceHandle);
+
+	if (gfx::map_buffer(inBufferHandle, reinterpret_cast<void*&>(inBufferPtr)))
 	{
-		glfwPollEvents();
-
-		gfx::reset(commandListHandle);
-		gfx::begin(commandListHandle);
-		gfx::bind_pipeline(commandListHandle, pipelineHandle);
-		gfx::bind_descriptor_set(commandListHandle, descriptorSetHandle);
-		gfx::dispatch(commandListHandle, 10, 1, 1);
-		gfx::end(commandListHandle);
-
-		gfx::SubmitInfo submitInfo{
-			.commandList = commandListHandle,
-			.waitSemaphoreHandle = {}
-		};
-		gfx::FenceHandle fenceHandle;
-		gfx::submit_command_list(submitInfo, &fenceHandle, nullptr);
-
-		gfx::wait_on_fence(fenceHandle);
+		for (auto i = 0; i < 10; ++i)
+		{
+			std::cout << inBufferPtr[i] << " ";
+		}
+		std::cout << std::endl;
+		gfx::unmap_buffer(inBufferHandle);
+	}
+	std::int32_t* outBufferPtr{ nullptr };
+	if (gfx::map_buffer(outBufferHandle, reinterpret_cast<void*&>(outBufferPtr)))
+	{
+		for (auto i = 0; i < 10; ++i)
+		{
+			std::cout << outBufferPtr[i] << " ";
+		}
+		std::cout << std::endl;
+		gfx::unmap_buffer(outBufferHandle);
 	}
 
 	gfx::destroy_buffer(inBufferHandle);
@@ -132,7 +142,4 @@ int main()
 
 	gfx::destroy_device(deviceHandle);
 	gfx::shutdown();
-
-	glfwDestroyWindow(window);
-	glfwTerminate();
 }
