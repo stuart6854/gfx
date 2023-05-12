@@ -118,6 +118,8 @@ namespace sm::gfx
 
 	void wait_on_fence(FenceHandle fenceHandle);
 
+	constexpr std::uint32_t CommandListFlags_FireAndForget = 1u << 0u; // Once a command list been submitted, it can no longer be reused, and it will be automatically freed (once safe to do so).
+
 	bool create_command_list(CommandListHandle& outCommandListHandle, DeviceHandle deviceHandle, std::uint32_t queueIndex);
 	void destroy_command_list(DeviceHandle deviceHandle, CommandListHandle commandListHandle);
 

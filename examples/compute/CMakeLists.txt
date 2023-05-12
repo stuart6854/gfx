@@ -5,10 +5,10 @@ add_custom_command(
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         COMMENT "Building Shaders."
 )
-add_custom_target(gfx_example_sandbox_shader DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/compute.spv")
+add_custom_target(gfx_example_compute_shader DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/compute.spv")
 
-add_executable(gfx_example_sandbox main.cpp)
+add_executable(gfx_example_compute main.cpp)
 
-target_link_libraries(gfx_example_sandbox PRIVATE gfx)
+target_link_libraries(gfx_example_compute PRIVATE gfx)
 
-add_dependencies(gfx_example_sandbox gfx_example_sandbox_shader)
+add_dependencies(gfx_example_compute gfx_example_compute_shader)

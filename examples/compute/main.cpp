@@ -20,7 +20,7 @@ auto read_shader_file(const char* filename) -> std::vector<char>
 		return shaderBinary;
 	}
 
-	GFX_LOG_ERR_FMT("Example - Sandbox - Failed to read shader file: {}", filename);
+	GFX_LOG_ERR_FMT("Example - compute - Failed to read shader file: {}", filename);
 	return {};
 }
 
@@ -31,7 +31,7 @@ int main()
 		GFX_ASSERT(false, "");
 	});
 
-	gfx::AppInfo appInfo{ "Sandbox App" };
+	gfx::AppInfo appInfo{ "compute App" };
 	if (!gfx::initialise(appInfo))
 	{
 		throw std::runtime_error("Failed to initialise GFX!");
