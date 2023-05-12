@@ -85,8 +85,9 @@ namespace sm::gfx
 	GFX_DEFINE_RESOURCE_HANDLE(CommandListHandle);
 	GFX_DEFINE_RESOURCE_HANDLE(FenceHandle);
 	GFX_DEFINE_RESOURCE_HANDLE(SemaphoreHandle);
-	GFX_DEFINE_RESOURCE_HANDLE(BufferHandle);
 	GFX_DEFINE_RESOURCE_HANDLE(PipelineHandle);
+	GFX_DEFINE_RESOURCE_HANDLE(DescriptorSetHandle);
+	GFX_DEFINE_RESOURCE_HANDLE(BufferHandle);
 
 	void set_error_callback(std::function<void(const char* msg)> callback);
 
@@ -148,6 +149,8 @@ namespace sm::gfx
 	};
 	bool create_compute_pipeline(PipelineHandle& outPipelineHandle, DeviceHandle deviceHandle, const ComputePipelineInfo& computePipelineInfo);
 	void destroy_compute_pipeline(PipelineHandle pipelineHandle);
+
+	bool create_descriptor_set_from_pipeline(DescriptorSetHandle& outDescriptorSetHandle, PipelineHandle pipelineHandle, std::uint32_t set);
 
 	enum class BufferType
 	{

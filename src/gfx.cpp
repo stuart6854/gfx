@@ -135,6 +135,20 @@ namespace sm::gfx
 	{
 	}
 
+	bool create_descriptor_set_from_pipeline(DescriptorSetHandle& outDescriptorSetHandle, PipelineHandle pipelineHandle, std::uint32_t set)
+	{
+		GFX_ASSERT(s_context && s_context->is_valid(), "GFX has not been initialised!");
+
+		Device* device{ nullptr };
+		if (!s_context->get_device(device, pipelineHandle.deviceHandle))
+		{
+			return false;
+		}
+		GFX_ASSERT(device != nullptr, "Device should not be null!");
+
+		return device->create_descriptor_set_from_pipeline(outDescriptorSetHandle, pipelineHandle, set);
+	}
+
 	bool create_buffer(BufferHandle& outBufferHandle, DeviceHandle deviceHandle, const BufferInfo& bufferInfo)
 	{
 		GFX_ASSERT(s_context && s_context->is_valid(), "GFX has not been initialised!");
@@ -674,6 +688,30 @@ namespace sm::gfx
 		}
 
 		outPipeline = m_pipelineMap.at(pipelineHandle.resourceHandle).get();
+		return true;
+	}
+
+	bool Device::create_descriptor_set_from_pipeline(DescriptorSetHandle& outDescriptorSetHandle, PipelineHandle pipelineHandle, std::uint32_t set)
+	{
+		Pipeline* pipeline{ nullptr };
+		if (!get_pipeline(pipeline, pipelineHandle))
+		{
+			return false;
+		}
+
+		auto descriptorSetLayout = pipeline->get_set_layout(set);
+
+		DescriptorSetHandle descriptorSetHandle(m_deviceHandle, ResourceHandle(m_nextDescriptorSetId));
+
+		vk::DescriptorSetAllocateInfo set_alloc_info{};
+		set_alloc_info.setDescriptorPool(m_descriptorPool.get());
+		set_alloc_info.setSetLayouts(descriptorSetLayout);
+		auto allocatedDescriptorSets = m_device->allocateDescriptorSetsUnique(set_alloc_info);
+
+		m_descriptorSetMap[descriptorSetHandle.resourceHandle] = std::move(allocatedDescriptorSets[0]);
+		m_nextDescriptorSetId += 1;
+
+		outDescriptorSetHandle = descriptorSetHandle;
 		return true;
 	}
 

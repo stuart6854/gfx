@@ -72,6 +72,8 @@ namespace sm::gfx
 		void destroy_pipeline(PipelineHandle pipelineHandle);
 		bool get_pipeline(Pipeline*& outPipeline, PipelineHandle pipelineHandle);
 
+		bool create_descriptor_set_from_pipeline(DescriptorSetHandle& outDescriptorSetHandle, PipelineHandle pipelineHandle, std::uint32_t set);
+
 		bool create_buffer(BufferHandle& outBufferHandle, const BufferInfo& bufferInfo);
 		void destroy_buffer(BufferHandle bufferHandle);
 		bool map_buffer(BufferHandle bufferHandle, void*& outBufferPtr);
@@ -106,6 +108,9 @@ namespace sm::gfx
 
 		std::unordered_map<ResourceHandle, std::unique_ptr<Pipeline>> m_pipelineMap;
 		std::uint32_t m_nextPipelineId{ 1 };
+
+		std::unordered_map<ResourceHandle, vk::UniqueDescriptorSet> m_descriptorSetMap;
+		std::uint32_t m_nextDescriptorSetId{ 1 };
 
 		std::unordered_map<ResourceHandle, std::unique_ptr<Buffer>> m_bufferMap;
 		std::uint32_t m_nextBufferId{ 1 };
