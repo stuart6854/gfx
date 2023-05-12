@@ -247,6 +247,33 @@ namespace sm::gfx
 		commandList->end();
 	}
 
+	void bind_pipeline(CommandListHandle commandListHandle, PipelineHandle pipelineHandle)
+	{
+		GFX_ASSERT(s_context && s_context->is_valid(), "GFX has not been initialised!");
+
+		Device* device{ nullptr };
+		if (!s_context->get_device(device, commandListHandle.deviceHandle))
+		{
+			return;
+		}
+		GFX_ASSERT(device != nullptr, "Device should not be null!");
+
+		Pipeline* pipeline{ nullptr };
+		if (!device->get_pipeline(pipeline, pipelineHandle))
+		{
+			return;
+		}
+		GFX_ASSERT(pipeline != nullptr, "Pipeline should not be null!");
+
+		CommandList* commandList{ nullptr };
+		if (!device->get_command_list(commandList, commandListHandle))
+		{
+			return;
+		}
+
+		commandList->bind_pipeline(pipeline);
+	}
+
 	void draw(CommandListHandle commandListHandle, std::uint32_t vertex_count, std::uint32_t instance_count, std::uint32_t first_vertex, std::uint32_t first_instance)
 	{
 		GFX_ASSERT(s_context && s_context->is_valid(), "GFX has not been initialised!");
@@ -607,6 +634,18 @@ namespace sm::gfx
 	{
 	}
 
+	bool Device::get_pipeline(Pipeline*& outPipeline, PipelineHandle pipelineHandle)
+	{
+		if (!m_pipelineMap.contains(pipelineHandle.resourceHandle))
+		{
+			outPipeline = nullptr;
+			return false;
+		}
+
+		outPipeline = m_pipelineMap.at(pipelineHandle.resourceHandle).get();
+		return true;
+	}
+
 	bool Device::create_buffer(BufferHandle& outBufferHandle, const BufferInfo& bufferInfo)
 	{
 		BufferHandle bufferHandle(m_deviceHandle, ResourceHandle(m_nextBufferId));
@@ -709,6 +748,18 @@ namespace sm::gfx
 		}
 
 		m_commandBuffer->end();
+	}
+
+	void CommandList::bind_pipeline(Pipeline* pipeline)
+	{
+		if (pipeline == nullptr)
+		{
+			s_errorCallback("GFX - Command list cannot bind null pipeline!");
+			return;
+		}
+
+		const vk::PipelineBindPoint bindPoint = pipeline->get_type() == PipelineType::eCompute ? vk::PipelineBindPoint::eCompute : vk::PipelineBindPoint::eGraphics;
+		m_commandBuffer->bindPipeline(bindPoint, pipeline->get_pipeline());
 	}
 
 	void CommandList::draw(std::uint32_t vertex_count, std::uint32_t instance_count, std::uint32_t first_vertex, std::uint32_t first_instance)

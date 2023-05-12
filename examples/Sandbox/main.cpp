@@ -52,6 +52,16 @@ int main()
 		throw std::runtime_error("Failed to create GFX device!");
 	}
 
+	const auto shaderBinary = read_shader_file("compute.spv");
+	gfx::ComputePipelineInfo pipelineInfo{
+		.shaderCode = shaderBinary,
+	};
+	gfx::PipelineHandle pipelineHandle{};
+	if (!gfx::create_compute_pipeline(pipelineHandle, deviceHandle, pipelineInfo))
+	{
+		throw std::runtime_error("Failed to create GFX compute pipeline!");
+	}
+
 	gfx::BufferHandle inBufferHandle{};
 	gfx::BufferHandle outBufferHandle{};
 	gfx::BufferInfo bufferInfo{
@@ -76,16 +86,6 @@ int main()
 		gfx::unmap_buffer(inBufferHandle);
 	}
 
-	const auto shaderBinary = read_shader_file("compute.spv");
-	gfx::ComputePipelineInfo pipelineInfo{
-		.shaderCode = shaderBinary,
-	};
-	gfx::PipelineHandle pipelineHandle{};
-	if (!gfx::create_compute_pipeline(pipelineHandle, deviceHandle, pipelineInfo))
-	{
-		throw std::runtime_error("Failed to create GFX compute pipeline!");
-	}
-
 	gfx::CommandListHandle commandListHandle{};
 	if (!gfx::create_command_list(commandListHandle, deviceHandle, 0))
 	{
@@ -98,6 +98,7 @@ int main()
 
 		gfx::reset(commandListHandle);
 		gfx::begin(commandListHandle);
+		gfx::bind_pipeline(commandListHandle, pipelineHandle);
 		gfx::end(commandListHandle);
 
 		gfx::SubmitInfo submitInfo{
