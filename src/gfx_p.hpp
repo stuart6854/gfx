@@ -73,6 +73,7 @@ namespace sm::gfx
 		bool get_pipeline(Pipeline*& outPipeline, PipelineHandle pipelineHandle);
 
 		bool create_descriptor_set_from_pipeline(DescriptorSetHandle& outDescriptorSetHandle, PipelineHandle pipelineHandle, std::uint32_t set);
+		bool get_descriptor_set(vk::DescriptorSet& outDescriptorSet, DescriptorSetHandle descriptorSetHandle);
 		void bind_buffer_to_descriptor_set(DescriptorSetHandle descriptorSetHandle, std::uint32_t binding, BufferHandle bufferHandle);
 
 		bool create_buffer(BufferHandle& outBufferHandle, const BufferInfo& bufferInfo);
@@ -135,6 +136,7 @@ namespace sm::gfx
 		void end();
 
 		void bind_pipeline(Pipeline* pipeline);
+		void bind_descriptor_set(vk::DescriptorSet descriptorSet);
 
 		void dispatch(std::uint32_t groupCountX, std::uint32_t groupCountY, std::uint32_t groupCountZ);
 
@@ -158,6 +160,7 @@ namespace sm::gfx
 		vk::UniqueCommandBuffer m_commandBuffer;
 
 		bool m_hasBegun{ false };
+		Pipeline* m_boundPipeline{ nullptr };
 	};
 
 	enum class PipelineType
@@ -179,6 +182,7 @@ namespace sm::gfx
 		/* Getters */
 
 		auto get_set_layout(std::uint32_t set) const -> vk::DescriptorSetLayout { return m_setLayouts.at(set); }
+		auto get_pipeline_layout() const -> vk::PipelineLayout { return m_layout.get(); }
 		auto get_pipeline() const -> vk::Pipeline { return m_pipeline.get(); }
 		auto get_type() const -> PipelineType { return m_pipelineType; }
 

@@ -307,6 +307,32 @@ namespace sm::gfx
 		commandList->bind_pipeline(pipeline);
 	}
 
+	void bind_descriptor_set(CommandListHandle commandListHandle, DescriptorSetHandle descriptorSetHandle)
+	{
+		GFX_ASSERT(s_context && s_context->is_valid(), "GFX has not been initialised!");
+
+		Device* device{ nullptr };
+		if (!s_context->get_device(device, commandListHandle.deviceHandle))
+		{
+			return;
+		}
+		GFX_ASSERT(device != nullptr, "Device should not be null!");
+
+		vk::DescriptorSet descriptorSet{};
+		if (!device->get_descriptor_set(descriptorSet, descriptorSetHandle))
+		{
+			return;
+		}
+
+		CommandList* commandList{ nullptr };
+		if (!device->get_command_list(commandList, commandListHandle))
+		{
+			return;
+		}
+
+		commandList->bind_descriptor_set(descriptorSet);
+	}
+
 	void dispatch(CommandListHandle commandListHandle, std::uint32_t groupCountX, std::uint32_t groupCountY, std::uint32_t groupCountZ)
 	{
 		GFX_ASSERT(s_context && s_context->is_valid(), "GFX has not been initialised!");
@@ -755,6 +781,18 @@ namespace sm::gfx
 		return true;
 	}
 
+	bool Device::get_descriptor_set(vk::DescriptorSet& outDescriptorSet, DescriptorSetHandle descriptorSetHandle)
+	{
+		if (!m_descriptorSetMap.contains(descriptorSetHandle.resourceHandle))
+		{
+			outDescriptorSet = nullptr;
+			return false;
+		}
+
+		outDescriptorSet = m_descriptorSetMap.at(descriptorSetHandle.resourceHandle).get();
+		return true;
+	}
+
 	void Device::bind_buffer_to_descriptor_set(DescriptorSetHandle descriptorSetHandle, std::uint32_t binding, BufferHandle bufferHandle)
 	{
 		if (!m_descriptorSetMap.contains(descriptorSetHandle.resourceHandle))
@@ -878,6 +916,7 @@ namespace sm::gfx
 	{
 		m_commandBuffer->reset();
 		m_hasBegun = false;
+		m_boundPipeline = nullptr;
 	}
 
 	void CommandList::begin()
@@ -914,6 +953,25 @@ namespace sm::gfx
 
 		const vk::PipelineBindPoint bindPoint = pipeline->get_type() == PipelineType::eCompute ? vk::PipelineBindPoint::eCompute : vk::PipelineBindPoint::eGraphics;
 		m_commandBuffer->bindPipeline(bindPoint, pipeline->get_pipeline());
+
+		m_boundPipeline = pipeline;
+	}
+
+	void CommandList::bind_descriptor_set(vk::DescriptorSet descriptorSet)
+	{
+		if (!m_hasBegun)
+		{
+			return;
+		}
+		if (m_boundPipeline == nullptr)
+		{
+			s_errorCallback("GFX - Cannot bind descriptor set when no pipeline has been bound!");
+			return;
+		}
+
+		const vk::PipelineBindPoint bindPoint = m_boundPipeline->get_type() == PipelineType::eCompute ? vk::PipelineBindPoint::eCompute : vk::PipelineBindPoint::eGraphics;
+		const auto pipelineLayout = m_boundPipeline->get_pipeline_layout();
+		m_commandBuffer->bindDescriptorSets(bindPoint, pipelineLayout, 0, { descriptorSet }, {});
 	}
 
 	void CommandList::dispatch(std::uint32_t groupCountX, std::uint32_t groupCountY, std::uint32_t groupCountZ)

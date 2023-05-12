@@ -177,6 +177,7 @@ namespace sm::gfx
 	void end(CommandListHandle commandListHandle);
 
 	void bind_pipeline(CommandListHandle commandListHandle, PipelineHandle pipelineHandle);
+	void bind_descriptor_set(CommandListHandle commandListHandle, DescriptorSetHandle descriptorSetHandle);
 
 	void dispatch(CommandListHandle commandListHandle, std::uint32_t groupCountX, std::uint32_t groupCountY, std::uint32_t groupCountZ);
 
