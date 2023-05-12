@@ -554,6 +554,7 @@ namespace sm::gfx
 		vk::DescriptorPoolCreateInfo descriptor_pool_info{};
 		descriptor_pool_info.setMaxSets(100);
 		descriptor_pool_info.setPoolSizes(descriptor_pool_sizes);
+		descriptor_pool_info.setFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet);
 		m_descriptorPool = m_device->createDescriptorPoolUnique(descriptor_pool_info);
 	}
 
