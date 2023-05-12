@@ -154,7 +154,7 @@ namespace sm::gfx
 		std::vector<DescriptorSetInfo> descriptorSets;
 	};
 	bool create_compute_pipeline(PipelineHandle& outPipelineHandle, DeviceHandle deviceHandle, const ComputePipelineInfo& computePipelineInfo);
-	void destroy_compute_pipeline(PipelineHandle pipelineHandle);
+	void destroy_pipeline(PipelineHandle pipelineHandle);
 
 	bool create_descriptor_set_from_pipeline(DescriptorSetHandle& outDescriptorSetHandle, PipelineHandle pipelineHandle, std::uint32_t set);
 	void bind_buffer_to_descriptor_set(DescriptorSetHandle descriptorSetHandle, std::uint32_t binding, BufferHandle bufferHandle);

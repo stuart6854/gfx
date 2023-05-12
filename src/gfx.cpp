@@ -131,7 +131,7 @@ namespace sm::gfx
 		return device->create_compute_pipeline(outPipelineHandle, computePipelineInfo);
 	}
 
-	void destroy_compute_pipeline(PipelineHandle pipelineHandle)
+	void destroy_pipeline(PipelineHandle pipelineHandle)
 	{
 	}
 
