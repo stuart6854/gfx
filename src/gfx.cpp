@@ -149,6 +149,25 @@ namespace sm::gfx
 		return device->create_descriptor_set_from_pipeline(outDescriptorSetHandle, pipelineHandle, set);
 	}
 
+	void bind_buffer_to_descriptor_set(DescriptorSetHandle descriptorSetHandle, std::uint32_t binding, BufferHandle bufferHandle)
+	{
+		GFX_ASSERT(s_context && s_context->is_valid(), "GFX has not been initialised!");
+		if (descriptorSetHandle.deviceHandle != bufferHandle.deviceHandle)
+		{
+			s_errorCallback("GFX - Buffer must belong to the same device as the descriptor set it is to be bound too!");
+			return;
+		}
+
+		Device* device{ nullptr };
+		if (!s_context->get_device(device, descriptorSetHandle.deviceHandle))
+		{
+			return;
+		}
+		GFX_ASSERT(device != nullptr, "Device should not be null!");
+
+		device->bind_buffer_to_descriptor_set(descriptorSetHandle, binding, bufferHandle);
+	}
+
 	bool create_buffer(BufferHandle& outBufferHandle, DeviceHandle deviceHandle, const BufferInfo& bufferInfo)
 	{
 		GFX_ASSERT(s_context && s_context->is_valid(), "GFX has not been initialised!");
@@ -714,6 +733,32 @@ namespace sm::gfx
 
 		outDescriptorSetHandle = descriptorSetHandle;
 		return true;
+	}
+
+	void Device::bind_buffer_to_descriptor_set(DescriptorSetHandle descriptorSetHandle, std::uint32_t binding, BufferHandle bufferHandle)
+	{
+		if (!m_descriptorSetMap.contains(descriptorSetHandle.resourceHandle))
+		{
+			s_errorCallback("GFX - Cannot bind buffer to unknown descriptor set!");
+			return;
+		}
+		const auto descriptorSet = m_descriptorSetMap.at(descriptorSetHandle.resourceHandle).get();
+
+		if (!m_bufferMap.contains(bufferHandle.resourceHandle))
+		{
+			s_errorCallback("GFX - Cannot bind unknown buffer to descriptor set!");
+			return;
+		}
+		const auto& buffer = m_bufferMap.at(bufferHandle.resourceHandle);
+
+		vk::WriteDescriptorSet write{};
+		write.setDstSet(descriptorSet);
+		write.setDstBinding(binding);
+		write.setDescriptorCount(1);
+		write.setDescriptorType(buffer->get_descriptor_type());
+		write.setBufferInfo(buffer->get_descriptor_info());
+
+		m_device->updateDescriptorSets(write, {});
 	}
 
 	bool Device::create_buffer(BufferHandle& outBufferHandle, const BufferInfo& bufferInfo)

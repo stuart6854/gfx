@@ -73,6 +73,7 @@ namespace sm::gfx
 		bool get_pipeline(Pipeline*& outPipeline, PipelineHandle pipelineHandle);
 
 		bool create_descriptor_set_from_pipeline(DescriptorSetHandle& outDescriptorSetHandle, PipelineHandle pipelineHandle, std::uint32_t set);
+		void bind_buffer_to_descriptor_set(DescriptorSetHandle descriptorSetHandle, std::uint32_t binding, BufferHandle bufferHandle);
 
 		bool create_buffer(BufferHandle& outBufferHandle, const BufferInfo& bufferInfo);
 		void destroy_buffer(BufferHandle bufferHandle);

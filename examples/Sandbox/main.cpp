@@ -97,6 +97,8 @@ int main()
 	{
 		throw std::runtime_error("Failed to create GFX descriptor set!");
 	}
+	gfx::bind_buffer_to_descriptor_set(descriptorSetHandle, 0, inBufferHandle);
+	gfx::bind_buffer_to_descriptor_set(descriptorSetHandle, 1, inBufferHandle);
 
 	gfx::CommandListHandle commandListHandle{};
 	if (!gfx::create_command_list(commandListHandle, deviceHandle, 0))
