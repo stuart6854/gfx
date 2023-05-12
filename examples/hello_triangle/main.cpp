@@ -52,9 +52,10 @@ int main()
 		throw std::runtime_error("Failed to create GFX device!");
 	}
 
-	const auto shaderBinary = read_shader_file("triangle.spv");
+	const auto vertShaderBinary = read_shader_file("triangle.vert.spv");
+	const auto fragShaderBinary = read_shader_file("triangle.frag.spv");
 	gfx::ComputePipelineInfo pipelineInfo{
-		.shaderCode = shaderBinary,
+		.shaderCode = vertShaderBinary,
 		.descriptorSets = {
 			gfx::DescriptorSetInfo{ .bindings = {
 										{ gfx::DescriptorType::eStorageBuffer, 1, gfx::ShaderStageFlags_Compute },

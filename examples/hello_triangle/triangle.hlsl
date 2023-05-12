@@ -1,8 +1,22 @@
-[[vk::binding(0, 0)]] RWStructuredBuffer<int> InBuffer;
-[[vk::binding(1, 0)]] RWStructuredBuffer<int> OutBuffer;
-
-[numthreads(1, 1, 1)]
-void Main(uint3 DTId : SV_DispatchThreadID)
+struct VSOut
 {
-    OutBuffer[DTId.x] = InBuffer[DTId.x] * InBuffer[DTId.x];
+    float4 position : SV_POSITION;
+};
+
+VSOut vs_main(uint vertexId : SV_VertexID)
+{
+    const float2 positions[] = {
+        {  0.0, -0.5 },
+        {  0.5,  0.5 },
+        { -0.5,  0.5 }
+    };
+
+    VSOut output;
+    output.position = float4(positions[vertexId], 0.0, 1.0);
+    return output;
+}
+
+float4 ps_main(VSOut input) : SV_TARGET
+{
+    return float4(1.0, 0.0, 1.0, 1.0);
 }
