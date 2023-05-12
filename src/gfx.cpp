@@ -1109,16 +1109,8 @@ namespace sm::gfx
 	ComputePipeline::ComputePipeline(vk::Device device, const std::vector<char>& shaderCode, const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts)
 		: Pipeline(PipelineType::eCompute, descriptorSetLayouts)
 	{
-		std::vector<vk::DescriptorSetLayoutBinding> set_layout_bindings{
-			{ 0, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eCompute },
-			{ 1, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eCompute },
-		};
-		vk::DescriptorSetLayoutCreateInfo set_layout_info{};
-		set_layout_info.setBindings(set_layout_bindings);
-		m_setLayout = device.createDescriptorSetLayoutUnique(set_layout_info);
-
 		vk::PipelineLayoutCreateInfo pipeline_layout_info{};
-		pipeline_layout_info.setSetLayouts(m_setLayout.get());
+		pipeline_layout_info.setSetLayouts(get_set_layouts());
 		m_layout = device.createPipelineLayoutUnique(pipeline_layout_info);
 
 		vk::ShaderModuleCreateInfo module_info{};
