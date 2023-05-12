@@ -885,6 +885,21 @@ namespace sm::gfx
 
 		outBinding.setDescriptorCount(descriptorBindingInfo.count);
 
+		vk::ShaderStageFlags stageFlags{};
+		if (descriptorBindingInfo.shaderStages & ShaderStageFlags_Compute)
+		{
+			stageFlags |= vk::ShaderStageFlagBits::eCompute;
+		}
+		if (descriptorBindingInfo.shaderStages & ShaderStageFlags_Vertex)
+		{
+			stageFlags |= vk::ShaderStageFlagBits::eVertex;
+		}
+		if (descriptorBindingInfo.shaderStages & ShaderStageFlags_Fragment)
+		{
+			stageFlags |= vk::ShaderStageFlagBits::eFragment;
+		}
+		outBinding.setStageFlags(stageFlags);
+
 		return outBinding;
 	}
 

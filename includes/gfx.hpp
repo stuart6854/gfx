@@ -133,10 +133,14 @@ namespace sm::gfx
 		eStorageBuffer,
 		eUniformBuffer,
 	};
+	constexpr std::uint32_t ShaderStageFlags_Compute = 1u << 0u;
+	constexpr std::uint32_t ShaderStageFlags_Vertex = 1u << 1u;
+	constexpr std::uint32_t ShaderStageFlags_Fragment = 1u << 2u;
 	struct DescriptorBindingInfo
 	{
 		DescriptorType type;
 		std::uint32_t count;
+		std::uint32_t shaderStages;
 	};
 	struct DescriptorSetInfo
 	{

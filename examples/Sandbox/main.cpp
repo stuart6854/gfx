@@ -57,8 +57,8 @@ int main()
 		.shaderCode = shaderBinary,
 		.descriptorSets = {
 			gfx::DescriptorSetInfo{ .bindings = {
-										{ gfx::DescriptorType::eStorageBuffer, 1 },
-										{ gfx::DescriptorType::eStorageBuffer, 1 },
+										{ gfx::DescriptorType::eStorageBuffer, 1, gfx::ShaderStageFlags_Compute },
+										{ gfx::DescriptorType::eStorageBuffer, 1, gfx::ShaderStageFlags_Compute },
 									} },
 		},
 	};
