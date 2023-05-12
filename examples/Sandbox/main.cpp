@@ -77,6 +77,14 @@ int main()
 	}
 
 	const auto shaderBinary = read_shader_file("compute.spv");
+	gfx::ComputePipelineInfo pipelineInfo{
+		.shaderCode = shaderBinary,
+	};
+	gfx::PipelineHandle pipelineHandle{};
+	if (!gfx::create_compute_pipeline(pipelineHandle, deviceHandle, pipelineInfo))
+	{
+		throw std::runtime_error("Failed to create GFX compute pipeline!");
+	}
 
 	gfx::CommandListHandle commandListHandle{};
 	if (!gfx::create_command_list(commandListHandle, deviceHandle, 0))

@@ -117,6 +117,24 @@ namespace sm::gfx
 		device->submit_command_list(submitInfo, outFenceHandle, outSemaphoreHandle);
 	}
 
+	bool create_compute_pipeline(PipelineHandle& outPipelineHandle, DeviceHandle deviceHandle, const ComputePipelineInfo& computePipelineInfo)
+	{
+		GFX_ASSERT(s_context && s_context->is_valid(), "GFX has not been initialised!");
+
+		Device* device{ nullptr };
+		if (!s_context->get_device(device, deviceHandle))
+		{
+			return false;
+		}
+		GFX_ASSERT(device != nullptr, "Device should not be null!");
+
+		return device->create_compute_pipeline(outPipelineHandle, computePipelineInfo);
+	}
+
+	void destroy_compute_pipeline(PipelineHandle pipelineHandle)
+	{
+	}
+
 	bool create_buffer(BufferHandle& outBufferHandle, DeviceHandle deviceHandle, const BufferInfo& bufferInfo)
 	{
 		GFX_ASSERT(s_context && s_context->is_valid(), "GFX has not been initialised!");
@@ -564,6 +582,21 @@ namespace sm::gfx
 		return true;
 	}
 
+	bool Device::create_compute_pipeline(PipelineHandle& outPipelineHandle, const ComputePipelineInfo& computePipelineInfo)
+	{
+		PipelineHandle pipelineHandle(m_deviceHandle, ResourceHandle(m_nextPipelineId));
+
+		m_pipelineMap[pipelineHandle.resourceHandle] = std::make_unique<ComputePipeline>(m_device.get(), computePipelineInfo);
+		m_nextPipelineId += 1;
+
+		outPipelineHandle = pipelineHandle;
+		return true;
+	}
+
+	void Device::destroy_pipeline(PipelineHandle pipelineHandle)
+	{
+	}
+
 	bool Device::create_buffer(BufferHandle& outBufferHandle, const BufferInfo& bufferInfo)
 	{
 		BufferHandle bufferHandle(m_deviceHandle, ResourceHandle(m_nextBufferId));
@@ -729,6 +762,56 @@ namespace sm::gfx
 		std::swap(m_buffer, rhs.m_buffer);
 		std::swap(m_allocation, rhs.m_allocation);
 		return *this;
+	}
+
+	Pipeline::Pipeline(PipelineType pipelineType)
+		: m_pipelineType(pipelineType)
+	{
+	}
+
+	Pipeline::Pipeline(Pipeline&& other) noexcept
+	{
+		std::swap(m_pipelineType, other.m_pipelineType);
+		std::swap(m_pipeline, other.m_pipeline);
+	}
+
+	auto Pipeline::operator=(Pipeline&& rhs) noexcept -> Pipeline&
+	{
+		std::swap(m_pipelineType, rhs.m_pipelineType);
+		std::swap(m_pipeline, rhs.m_pipeline);
+		return *this;
+	}
+
+	ComputePipeline::ComputePipeline(vk::Device device, const ComputePipelineInfo& computePipelineInfo)
+		: Pipeline(PipelineType::eCompute)
+	{
+		std::vector<vk::DescriptorSetLayoutBinding> set_layout_bindings{
+			{ 0, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eCompute },
+			{ 1, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eCompute },
+		};
+		vk::DescriptorSetLayoutCreateInfo set_layout_info{};
+		set_layout_info.setBindings(set_layout_bindings);
+		m_setLayout = device.createDescriptorSetLayoutUnique(set_layout_info);
+
+		vk::PipelineLayoutCreateInfo pipeline_layout_info{};
+		pipeline_layout_info.setSetLayouts(m_setLayout.get());
+		m_layout = device.createPipelineLayoutUnique(pipeline_layout_info);
+
+		vk::ShaderModuleCreateInfo module_info{};
+		module_info.setCodeSize(computePipelineInfo.shaderCode.size());
+		module_info.setPCode(reinterpret_cast<const std::uint32_t*>(computePipelineInfo.shaderCode.data()));
+		auto module = device.createShaderModuleUnique(module_info);
+
+		vk::PipelineShaderStageCreateInfo stage_info{};
+		stage_info.setStage(vk::ShaderStageFlagBits::eCompute);
+		stage_info.setModule(module.get());
+		stage_info.setPName("Main");
+
+		vk::ComputePipelineCreateInfo vk_pipeline_info{};
+		vk_pipeline_info.setStage(stage_info);
+		vk_pipeline_info.setLayout(m_layout.get());
+
+		m_pipeline = device.createComputePipelineUnique({}, vk_pipeline_info).value;
 	}
 
 	VKAPI_ATTR VkBool32 VKAPI_CALL debug_utils_messenger_callback(

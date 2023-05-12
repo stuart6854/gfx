@@ -47,6 +47,7 @@ namespace sm::gfx
 	};
 
 	class CommandList;
+	class Pipeline;
 	class Buffer;
 
 	class Device
@@ -64,6 +65,9 @@ namespace sm::gfx
 		auto create_command_list(CommandListHandle& outCommandListHandle, std::uint32_t queueIndex) -> bool;
 		bool get_command_list(CommandList*& outCommandList, CommandListHandle commandListHandle);
 		bool submit_command_list(const SubmitInfo& submitInfo, FenceHandle* outFenceHandle, SemaphoreHandle* outSemaphoreHandle);
+
+		bool create_compute_pipeline(PipelineHandle& outPipelineHandle, const ComputePipelineInfo& computePipelineInfo);
+		void destroy_pipeline(PipelineHandle pipelineHandle);
 
 		bool create_buffer(BufferHandle& outBufferHandle, const BufferInfo& bufferInfo);
 		void destroy_buffer(BufferHandle bufferHandle);
@@ -90,6 +94,9 @@ namespace sm::gfx
 
 		std::unordered_map<ResourceHandle, std::unique_ptr<CommandList>> m_commandListMap;
 		std::uint32_t m_nextCommandListId{ 1 };
+
+		std::unordered_map<ResourceHandle, std::unique_ptr<Pipeline>> m_pipelineMap;
+		std::uint32_t m_nextPipelineId{ 1 };
 
 		std::unordered_map<ResourceHandle, std::unique_ptr<Buffer>> m_bufferMap;
 		std::uint32_t m_nextBufferId{ 1 };
@@ -132,6 +139,50 @@ namespace sm::gfx
 		vk::UniqueCommandBuffer m_commandBuffer;
 
 		bool m_hasBegun{ false };
+	};
+
+	enum class PipelineType
+	{
+		eCompute,
+		eGraphics
+	};
+
+	class Pipeline
+	{
+	public:
+		Pipeline() = default;
+		explicit Pipeline(PipelineType pipelineType);
+		Pipeline(Pipeline&& other) noexcept;
+		virtual ~Pipeline() = default;
+
+		GFX_DISABLE_COPY(Pipeline);
+
+		/* Getters */
+
+		auto get_pipeline() const -> vk::Pipeline { return m_pipeline.get(); }
+		auto get_type() const -> PipelineType { return m_pipelineType; }
+
+		/* Operators */
+
+		auto operator=(Pipeline&& rhs) noexcept -> Pipeline&;
+
+	protected:
+		vk::UniquePipelineLayout m_layout;
+		vk::UniquePipeline m_pipeline;
+
+	private:
+		PipelineType m_pipelineType{};
+	};
+
+	class ComputePipeline final : public Pipeline
+	{
+	public:
+		ComputePipeline() = default;
+		ComputePipeline(vk::Device device, const ComputePipelineInfo& computePipelineInfo);
+		~ComputePipeline() override = default;
+
+	private:
+		vk::UniqueDescriptorSetLayout m_setLayout;
 	};
 
 	class Buffer

@@ -75,6 +75,7 @@ namespace sm::gfx
 	GFX_DEFINE_RESOURCE_HANDLE(FenceHandle);
 	GFX_DEFINE_RESOURCE_HANDLE(SemaphoreHandle);
 	GFX_DEFINE_RESOURCE_HANDLE(BufferHandle);
+	GFX_DEFINE_RESOURCE_HANDLE(PipelineHandle);
 
 	void set_error_callback(std::function<void(const char* msg)> callback);
 
@@ -114,6 +115,13 @@ namespace sm::gfx
 		SemaphoreHandle waitSemaphoreHandle;
 	};
 	void submit_command_list(const SubmitInfo& submitInfo, FenceHandle* outFenceHandle, SemaphoreHandle* outSemaphoreHandle);
+
+	struct ComputePipelineInfo
+	{
+		std::vector<char> shaderCode;
+	};
+	bool create_compute_pipeline(PipelineHandle& outPipelineHandle, DeviceHandle deviceHandle, const ComputePipelineInfo& computePipelineInfo);
+	void destroy_compute_pipeline(PipelineHandle pipelineHandle);
 
 	enum class BufferType
 	{
