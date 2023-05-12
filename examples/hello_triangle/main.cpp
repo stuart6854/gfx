@@ -77,7 +77,12 @@ int main()
 
 		gfx::reset(commandListHandle);
 		gfx::begin(commandListHandle);
+		// #TODO: Begin Render Pass
+		// #TODO: Set viewport
+		// #TODO: Set scissor
 		gfx::bind_pipeline(commandListHandle, pipelineHandle);
+		// #TODO: Draw
+		// #TODO: End Render Pass
 		gfx::end(commandListHandle);
 
 		gfx::SubmitInfo submitInfo{
@@ -86,6 +91,8 @@ int main()
 		};
 		gfx::FenceHandle fenceHandle;
 		gfx::submit_command_list(submitInfo, &fenceHandle, nullptr);
+
+		// #TODO: Present
 
 		gfx::wait_on_fence(fenceHandle);
 	}
