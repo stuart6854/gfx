@@ -531,6 +531,10 @@ namespace sm::gfx
 
 		m_physicalDevice = physicalDevices[bestDevice];
 
+		std::vector<const char*> extensions = {
+			VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
+		};
+
 		auto queueProperties = m_physicalDevice.getQueueFamilyProperties();
 
 		m_queueFlags = deviceInfo.queueFlags;
@@ -578,8 +582,15 @@ namespace sm::gfx
 			queue_info.setPQueuePriorities(&QUEUE_PRIORITY);
 		}
 
+		vk::PhysicalDeviceFeatures features{};
+		vk::PhysicalDeviceDynamicRenderingFeatures dynamic_rendering_features{};
+		dynamic_rendering_features.setDynamicRendering(true);
+
 		vk::DeviceCreateInfo vk_device_info{};
+		vk_device_info.setPEnabledExtensionNames(extensions);
 		vk_device_info.setQueueCreateInfos(queue_info_vec);
+		vk_device_info.setPEnabledFeatures(&features);
+		vk_device_info.setPNext(&dynamic_rendering_features);
 		m_device = m_physicalDevice.createDeviceUnique(vk_device_info);
 		if (!*m_device)
 		{
