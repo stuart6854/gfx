@@ -895,6 +895,17 @@ namespace sm::gfx
 		alloc_info.setFlags(vma::AllocationCreateFlagBits::eHostAccessSequentialWrite); // #TODO: Optional.
 
 		std::tie(m_buffer, m_allocation) = m_allocator.createBufferUnique(vk_buffer_info, alloc_info);
+
+		switch (bufferInfo.type)
+		{
+			case BufferType::eStorage:
+				m_descriptorType = vk::DescriptorType::eStorageBuffer;
+				break;
+		}
+
+		m_descriptorInfo.setBuffer(m_buffer.get());
+		m_descriptorInfo.setOffset(0);
+		m_descriptorInfo.setRange(bufferInfo.size);
 	}
 
 	Buffer::Buffer(Buffer&& other) noexcept
@@ -903,6 +914,8 @@ namespace sm::gfx
 		std::swap(m_allocation, other.m_allocation);
 		std::swap(m_buffer, other.m_buffer);
 		std::swap(m_allocation, other.m_allocation);
+		std::swap(m_descriptorType, other.m_descriptorType);
+		std::swap(m_descriptorInfo, other.m_descriptorInfo);
 	}
 
 	auto Buffer::operator=(Buffer&& rhs) noexcept -> Buffer&
@@ -911,6 +924,8 @@ namespace sm::gfx
 		std::swap(m_allocation, rhs.m_allocation);
 		std::swap(m_buffer, rhs.m_buffer);
 		std::swap(m_allocation, rhs.m_allocation);
+		std::swap(m_descriptorType, rhs.m_descriptorType);
+		std::swap(m_descriptorInfo, rhs.m_descriptorInfo);
 		return *this;
 	}
 

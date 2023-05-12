@@ -218,6 +218,9 @@ namespace sm::gfx
 		auto get_buffer() const -> vk::Buffer { return m_buffer.get(); }
 		auto get_allocation() const -> vma::Allocation { return m_allocation.get(); }
 
+		auto get_descriptor_type() const -> auto { return m_descriptorType; }
+		auto get_descriptor_info() const -> const vk::DescriptorBufferInfo& { return m_descriptorInfo; }
+
 		/* Operators */
 
 		auto operator=(Buffer&& rhs) noexcept -> Buffer&;
@@ -228,6 +231,9 @@ namespace sm::gfx
 
 		vma::UniqueBuffer m_buffer;
 		vma::UniqueAllocation m_allocation;
+
+		vk::DescriptorType m_descriptorType;
+		vk::DescriptorBufferInfo m_descriptorInfo;
 	};
 
 } // namespace sm::gfx
