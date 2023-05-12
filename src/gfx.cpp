@@ -131,6 +131,20 @@ namespace sm::gfx
 		return device->create_compute_pipeline(outPipelineHandle, computePipelineInfo);
 	}
 
+	bool create_graphics_pipeline(PipelineHandle& outPipelineHandle, DeviceHandle deviceHandle, const GraphicsPipelineInfo& graphicsPipelineInfo)
+	{
+		GFX_ASSERT(s_context && s_context->is_valid(), "GFX has not been initialised!");
+
+		Device* device{ nullptr };
+		if (!s_context->get_device(device, deviceHandle))
+		{
+			return false;
+		}
+		GFX_ASSERT(device != nullptr, "Device should not be null!");
+
+		return device->create_graphics_pipeline(outPipelineHandle, graphicsPipelineInfo);
+	}
+
 	void destroy_pipeline(PipelineHandle pipelineHandle)
 	{
 	}
@@ -752,6 +766,27 @@ namespace sm::gfx
 		return true;
 	}
 
+	bool Device::create_graphics_pipeline(PipelineHandle& outPipelineHandle, const GraphicsPipelineInfo& graphicsPipelineInfo)
+	{
+		PipelineHandle pipelineHandle(m_deviceHandle, ResourceHandle(m_nextPipelineId));
+
+		std::vector<vk::DescriptorSetLayout> setLayouts(graphicsPipelineInfo.descriptorSets.size());
+		for (auto i = 0; i < setLayouts.size(); ++i)
+		{
+			vk::DescriptorSetLayout setLayout{};
+			if (create_or_get_descriptor_set_layout(setLayout, graphicsPipelineInfo.descriptorSets.at(i)))
+			{
+				setLayouts[i] = setLayout;
+			}
+		}
+
+		m_pipelineMap[pipelineHandle.resourceHandle] = std::make_unique<GraphicsPipeline>(m_device.get(), graphicsPipelineInfo.vertexCode, graphicsPipelineInfo.fragmentCode, setLayouts);
+		m_nextPipelineId += 1;
+
+		outPipelineHandle = pipelineHandle;
+		return true;
+	}
+
 	void Device::destroy_pipeline(PipelineHandle pipelineHandle)
 	{
 	}
@@ -1130,6 +1165,98 @@ namespace sm::gfx
 		m_pipeline = device.createComputePipelineUnique({}, vk_pipeline_info).value;
 	}
 
+	GraphicsPipeline::GraphicsPipeline(vk::Device device, const std::vector<char>& vertexCode, const std::vector<char>& fragmentCode, const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts)
+		: Pipeline(PipelineType::eGraphics, descriptorSetLayouts)
+	{
+		vk::PipelineLayoutCreateInfo pipeline_layout_info{};
+		pipeline_layout_info.setSetLayouts(get_set_layouts());
+		m_layout = device.createPipelineLayoutUnique(pipeline_layout_info);
+
+		vk::ShaderModuleCreateInfo vertex_module_info{};
+		vertex_module_info.setCodeSize(vertexCode.size());
+		vertex_module_info.setPCode(reinterpret_cast<const std::uint32_t*>(vertexCode.data()));
+		auto vertex_module = device.createShaderModuleUnique(vertex_module_info);
+		vk::PipelineShaderStageCreateInfo vertex_stage_info{};
+		vertex_stage_info.setStage(vk::ShaderStageFlagBits::eVertex);
+		vertex_stage_info.setModule(vertex_module.get());
+		vertex_stage_info.setPName("vs_main");
+
+		vk::ShaderModuleCreateInfo fragment_module_info{};
+		fragment_module_info.setCodeSize(fragmentCode.size());
+		fragment_module_info.setPCode(reinterpret_cast<const std::uint32_t*>(fragmentCode.data()));
+		auto fragment_module = device.createShaderModuleUnique(fragment_module_info);
+		vk::PipelineShaderStageCreateInfo fragment_stage_info{};
+		fragment_stage_info.setStage(vk::ShaderStageFlagBits::eFragment);
+		fragment_stage_info.setModule(fragment_module.get());
+		fragment_stage_info.setPName("ps_main");
+
+		const std::vector stages = { vertex_stage_info, fragment_stage_info };
+
+		vk::PipelineVertexInputStateCreateInfo vertex_input_state{};
+
+		vk::PipelineInputAssemblyStateCreateInfo input_assembly_state{};
+		input_assembly_state.setTopology(vk::PrimitiveTopology::eTriangleList);
+
+		vk::PipelineViewportStateCreateInfo viewport_state{};
+		viewport_state.setViewportCount(1);
+		viewport_state.setScissorCount(1);
+
+		vk::PipelineRasterizationStateCreateInfo rasterisation_state{};
+		rasterisation_state.setPolygonMode(vk::PolygonMode::eFill);	  // TODO: Optional.
+		rasterisation_state.setCullMode(vk::CullModeFlagBits::eNone); // TODO: Optional.
+		rasterisation_state.setFrontFace(vk::FrontFace::eClockwise);  // TODO: Optional.
+		rasterisation_state.setLineWidth(1.0f);						  // TODO: Optional.
+
+		vk::PipelineMultisampleStateCreateInfo multisample_state{};
+		multisample_state.setRasterizationSamples(vk::SampleCountFlagBits::e1); // #TODO: Optional.
+
+		vk::PipelineDepthStencilStateCreateInfo depth_stencil_state{};
+		depth_stencil_state.setDepthTestEnable(false);	 // #TODO: Optional.
+		depth_stencil_state.setDepthWriteEnable(false);	 // #TODO: Optional.
+		depth_stencil_state.setStencilTestEnable(false); // #TODO: Optional.
+
+		std::vector<vk::PipelineColorBlendAttachmentState> colorBlendAttachments{
+			vk::PipelineColorBlendAttachmentState(
+				VK_FALSE,
+				vk::BlendFactor::eZero,
+				vk::BlendFactor::eOne,
+				vk::BlendOp::eAdd,
+				vk::BlendFactor::eZero,
+				vk::BlendFactor::eZero,
+				vk::BlendOp::eAdd,
+				vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA)
+		};
+		vk::PipelineColorBlendStateCreateInfo color_blend_state{};
+		color_blend_state.setAttachments(colorBlendAttachments);
+
+		std::vector<vk::DynamicState> dynamicStates{
+			vk::DynamicState::eViewport,
+			vk::DynamicState::eScissor
+		};
+		vk::PipelineDynamicStateCreateInfo dynamic_state{};
+		dynamic_state.setDynamicStates(dynamicStates);
+
+		std::vector<vk::Format> colorAttachmentFormats{ vk::Format::eR8G8B8A8Srgb }; // #TODO: Optional.
+		vk::PipelineRenderingCreateInfo rendering_info{};
+		rendering_info.setColorAttachmentFormats(colorAttachmentFormats);
+		rendering_info.setDepthAttachmentFormat({}); // #TODO: Optional.
+
+		vk::GraphicsPipelineCreateInfo vk_pipeline_info{};
+		vk_pipeline_info.setStages(stages);
+		vk_pipeline_info.setLayout(m_layout.get());
+		vk_pipeline_info.setPVertexInputState(&vertex_input_state);
+		vk_pipeline_info.setPInputAssemblyState(&input_assembly_state);
+		vk_pipeline_info.setPViewportState(&viewport_state);
+		vk_pipeline_info.setPRasterizationState(&rasterisation_state);
+		vk_pipeline_info.setPMultisampleState(&multisample_state);
+		vk_pipeline_info.setPDepthStencilState(&depth_stencil_state);
+		vk_pipeline_info.setPColorBlendState(&color_blend_state);
+		vk_pipeline_info.setPDynamicState(&dynamic_state);
+		vk_pipeline_info.setPNext(&rendering_info);
+
+		m_pipeline = device.createGraphicsPipelineUnique({}, vk_pipeline_info).value;
+	}
+
 	VKAPI_ATTR VkBool32 VKAPI_CALL debug_utils_messenger_callback(
 		VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
 		VkDebugUtilsMessageTypeFlagsEXT message_type,
@@ -1142,5 +1269,4 @@ namespace sm::gfx
 	}
 
 #pragma endregion
-
 } // namespace sm::gfx

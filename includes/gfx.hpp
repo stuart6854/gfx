@@ -154,6 +154,13 @@ namespace sm::gfx
 		std::vector<DescriptorSetInfo> descriptorSets;
 	};
 	bool create_compute_pipeline(PipelineHandle& outPipelineHandle, DeviceHandle deviceHandle, const ComputePipelineInfo& computePipelineInfo);
+	struct GraphicsPipelineInfo
+	{
+		std::vector<char> vertexCode;
+		std::vector<char> fragmentCode;
+		std::vector<DescriptorSetInfo> descriptorSets;
+	};
+	bool create_graphics_pipeline(PipelineHandle& outPipelineHandle, DeviceHandle deviceHandle, const GraphicsPipelineInfo& graphicsPipelineInfo);
 	void destroy_pipeline(PipelineHandle pipelineHandle);
 
 	bool create_descriptor_set_from_pipeline(DescriptorSetHandle& outDescriptorSetHandle, PipelineHandle pipelineHandle, std::uint32_t set);

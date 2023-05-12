@@ -69,6 +69,7 @@ namespace sm::gfx
 		bool create_or_get_descriptor_set_layout(vk::DescriptorSetLayout& outDescriptorSetLayout, const DescriptorSetInfo& descriptorSetInfo);
 
 		bool create_compute_pipeline(PipelineHandle& outPipelineHandle, const ComputePipelineInfo& computePipelineInfo);
+		bool create_graphics_pipeline(PipelineHandle& outPipelineHandle, const GraphicsPipelineInfo& graphicsPipelineInfo);
 		void destroy_pipeline(PipelineHandle pipelineHandle);
 		bool get_pipeline(Pipeline*& outPipeline, PipelineHandle pipelineHandle);
 
@@ -181,6 +182,7 @@ namespace sm::gfx
 
 		/* Getters */
 
+		auto get_set_layouts() const -> const std::vector<vk::DescriptorSetLayout>& { return m_setLayouts; }
 		auto get_set_layout(std::uint32_t set) const -> vk::DescriptorSetLayout { return m_setLayouts.at(set); }
 		auto get_pipeline_layout() const -> vk::PipelineLayout { return m_layout.get(); }
 		auto get_pipeline() const -> vk::Pipeline { return m_pipeline.get(); }
@@ -205,6 +207,16 @@ namespace sm::gfx
 		ComputePipeline() = default;
 		ComputePipeline(vk::Device device, const std::vector<char>& shaderCode, const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts);
 		~ComputePipeline() override = default;
+
+	private:
+	};
+
+	class GraphicsPipeline final : public Pipeline
+	{
+	public:
+		GraphicsPipeline() = default;
+		GraphicsPipeline(vk::Device device, const std::vector<char>& vertexCode, const std::vector<char>& fragmentCode, const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts);
+		~GraphicsPipeline() override = default;
 
 	private:
 		vk::UniqueDescriptorSetLayout m_setLayout;

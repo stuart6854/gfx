@@ -54,19 +54,15 @@ int main()
 
 	const auto vertShaderBinary = read_shader_file("triangle.vert.spv");
 	const auto fragShaderBinary = read_shader_file("triangle.frag.spv");
-	gfx::ComputePipelineInfo pipelineInfo{
-		.shaderCode = vertShaderBinary,
-		.descriptorSets = {
-			gfx::DescriptorSetInfo{ .bindings = {
-										{ gfx::DescriptorType::eStorageBuffer, 1, gfx::ShaderStageFlags_Compute },
-										{ gfx::DescriptorType::eStorageBuffer, 1, gfx::ShaderStageFlags_Compute },
-									} },
-		},
+	gfx::GraphicsPipelineInfo pipelineInfo{
+		.vertexCode = vertShaderBinary,
+		.fragmentCode = fragShaderBinary,
+		.descriptorSets = {},
 	};
 	gfx::PipelineHandle pipelineHandle{};
-	if (!gfx::create_compute_pipeline(pipelineHandle, deviceHandle, pipelineInfo))
+	if (!gfx::create_graphics_pipeline(pipelineHandle, deviceHandle, pipelineInfo))
 	{
-		throw std::runtime_error("Failed to create GFX compute pipeline!");
+		throw std::runtime_error("Failed to create GFX graphics pipeline!");
 	}
 
 	gfx::CommandListHandle commandListHandle{};
