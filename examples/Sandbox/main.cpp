@@ -55,6 +55,12 @@ int main()
 	const auto shaderBinary = read_shader_file("compute.spv");
 	gfx::ComputePipelineInfo pipelineInfo{
 		.shaderCode = shaderBinary,
+		.descriptorSets = {
+			gfx::DescriptorSetInfo{ .bindings = {
+										{ gfx::DescriptorType::eStorageBuffer, 1 },
+										{ gfx::DescriptorType::eStorageBuffer, 1 },
+									} },
+		},
 	};
 	gfx::PipelineHandle pipelineHandle{};
 	if (!gfx::create_compute_pipeline(pipelineHandle, deviceHandle, pipelineInfo))

@@ -66,6 +66,8 @@ namespace sm::gfx
 		bool get_command_list(CommandList*& outCommandList, CommandListHandle commandListHandle);
 		bool submit_command_list(const SubmitInfo& submitInfo, FenceHandle* outFenceHandle, SemaphoreHandle* outSemaphoreHandle);
 
+		bool create_or_get_descriptor_set_layout(vk::DescriptorSetLayout& outDescriptorSetLayout, const DescriptorSetInfo& descriptorSetInfo);
+
 		bool create_compute_pipeline(PipelineHandle& outPipelineHandle, const ComputePipelineInfo& computePipelineInfo);
 		void destroy_pipeline(PipelineHandle pipelineHandle);
 		bool get_pipeline(Pipeline*& outPipeline, PipelineHandle pipelineHandle);
@@ -77,6 +79,8 @@ namespace sm::gfx
 
 	private:
 		auto create_fence() -> FenceHandle;
+
+		static auto get_descriptor_set_layout_binding(const DescriptorBindingInfo& descriptorBindingInfo) -> vk::DescriptorSetLayoutBinding;
 
 	private:
 		DeviceHandle m_deviceHandle;
@@ -97,6 +101,8 @@ namespace sm::gfx
 
 		std::unordered_map<ResourceHandle, std::unique_ptr<CommandList>> m_commandListMap;
 		std::uint32_t m_nextCommandListId{ 1 };
+
+		std::unordered_map<std::size_t, vk::UniqueDescriptorSetLayout> m_descriptorSetLayoutMap;
 
 		std::unordered_map<ResourceHandle, std::unique_ptr<Pipeline>> m_pipelineMap;
 		std::uint32_t m_nextPipelineId{ 1 };
@@ -156,7 +162,7 @@ namespace sm::gfx
 	{
 	public:
 		Pipeline() = default;
-		explicit Pipeline(PipelineType pipelineType);
+		explicit Pipeline(PipelineType pipelineType, const std::vector<vk::DescriptorSetLayout>& setLayouts);
 		Pipeline(Pipeline&& other) noexcept;
 		virtual ~Pipeline() = default;
 
@@ -164,6 +170,7 @@ namespace sm::gfx
 
 		/* Getters */
 
+		auto get_set_layout(std::uint32_t set) const -> vk::DescriptorSetLayout { return m_setLayouts.at(set); }
 		auto get_pipeline() const -> vk::Pipeline { return m_pipeline.get(); }
 		auto get_type() const -> PipelineType { return m_pipelineType; }
 
@@ -177,13 +184,14 @@ namespace sm::gfx
 
 	private:
 		PipelineType m_pipelineType{};
+		std::vector<vk::DescriptorSetLayout> m_setLayouts;
 	};
 
 	class ComputePipeline final : public Pipeline
 	{
 	public:
 		ComputePipeline() = default;
-		ComputePipeline(vk::Device device, const ComputePipelineInfo& computePipelineInfo);
+		ComputePipeline(vk::Device device, const std::vector<char>& shaderCode, const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts);
 		~ComputePipeline() override = default;
 
 	private:

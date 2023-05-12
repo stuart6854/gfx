@@ -583,6 +583,27 @@ namespace sm::gfx
 		return true;
 	}
 
+	bool Device::create_or_get_descriptor_set_layout(vk::DescriptorSetLayout& outDescriptorSetLayout, const DescriptorSetInfo& descriptorSetInfo)
+	{
+		const auto hash = std::hash<DescriptorSetInfo>{}(descriptorSetInfo);
+		if (!m_descriptorSetLayoutMap.contains(hash))
+		{
+			std::vector<vk::DescriptorSetLayoutBinding> vk_bindings(descriptorSetInfo.bindings.size());
+			for (auto i = 0; i < vk_bindings.size(); ++i)
+			{
+				vk_bindings[i] = get_descriptor_set_layout_binding(descriptorSetInfo.bindings.at(i));
+				vk_bindings[i].setBinding(i);
+			}
+
+			vk::DescriptorSetLayoutCreateInfo set_layout_info{};
+			set_layout_info.setBindings(vk_bindings);
+			m_descriptorSetLayoutMap[hash] = m_device->createDescriptorSetLayoutUnique(set_layout_info);
+		}
+
+		outDescriptorSetLayout = m_descriptorSetLayoutMap.at(hash).get();
+		return true;
+	}
+
 	bool Device::submit_command_list(const SubmitInfo& submitInfo, FenceHandle* outFenceHandle, SemaphoreHandle* outSemaphoreHandle)
 	{
 		if (!m_commandListMap.contains(submitInfo.commandList.resourceHandle))
@@ -623,7 +644,17 @@ namespace sm::gfx
 	{
 		PipelineHandle pipelineHandle(m_deviceHandle, ResourceHandle(m_nextPipelineId));
 
-		m_pipelineMap[pipelineHandle.resourceHandle] = std::make_unique<ComputePipeline>(m_device.get(), computePipelineInfo);
+		std::vector<vk::DescriptorSetLayout> setLayouts(computePipelineInfo.descriptorSets.size());
+		for (auto i = 0; i < setLayouts.size(); ++i)
+		{
+			vk::DescriptorSetLayout setLayout{};
+			if (create_or_get_descriptor_set_layout(setLayout, computePipelineInfo.descriptorSets.at(i)))
+			{
+				setLayouts[i] = setLayout;
+			}
+		}
+
+		m_pipelineMap[pipelineHandle.resourceHandle] = std::make_unique<ComputePipeline>(m_device.get(), computePipelineInfo.shaderCode, setLayouts);
 		m_nextPipelineId += 1;
 
 		outPipelineHandle = pipelineHandle;
@@ -694,6 +725,25 @@ namespace sm::gfx
 
 		m_nextFenceId += 1;
 		return fenceHandle;
+	}
+
+	auto Device::get_descriptor_set_layout_binding(const DescriptorBindingInfo& descriptorBindingInfo) -> vk::DescriptorSetLayoutBinding
+	{
+		vk::DescriptorSetLayoutBinding outBinding{};
+
+		switch (descriptorBindingInfo.type)
+		{
+			case DescriptorType::eStorageBuffer:
+				outBinding.setDescriptorType(vk::DescriptorType::eStorageBuffer);
+				break;
+			case DescriptorType::eUniformBuffer:
+				outBinding.setDescriptorType(vk::DescriptorType::eUniformBuffer);
+				break;
+		}
+
+		outBinding.setDescriptorCount(descriptorBindingInfo.count);
+
+		return outBinding;
 	}
 
 	CommandList::CommandList(vk::Device device, vk::CommandPool commandPool, vk::Queue queue)
@@ -825,8 +875,8 @@ namespace sm::gfx
 		return *this;
 	}
 
-	Pipeline::Pipeline(PipelineType pipelineType)
-		: m_pipelineType(pipelineType)
+	Pipeline::Pipeline(PipelineType pipelineType, const std::vector<vk::DescriptorSetLayout>& setLayouts)
+		: m_pipelineType(pipelineType), m_setLayouts(setLayouts)
 	{
 	}
 
@@ -843,8 +893,8 @@ namespace sm::gfx
 		return *this;
 	}
 
-	ComputePipeline::ComputePipeline(vk::Device device, const ComputePipelineInfo& computePipelineInfo)
-		: Pipeline(PipelineType::eCompute)
+	ComputePipeline::ComputePipeline(vk::Device device, const std::vector<char>& shaderCode, const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts)
+		: Pipeline(PipelineType::eCompute, descriptorSetLayouts)
 	{
 		std::vector<vk::DescriptorSetLayoutBinding> set_layout_bindings{
 			{ 0, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eCompute },
@@ -859,8 +909,8 @@ namespace sm::gfx
 		m_layout = device.createPipelineLayoutUnique(pipeline_layout_info);
 
 		vk::ShaderModuleCreateInfo module_info{};
-		module_info.setCodeSize(computePipelineInfo.shaderCode.size());
-		module_info.setPCode(reinterpret_cast<const std::uint32_t*>(computePipelineInfo.shaderCode.data()));
+		module_info.setCodeSize(shaderCode.size());
+		module_info.setPCode(reinterpret_cast<const std::uint32_t*>(shaderCode.data()));
 		auto module = device.createShaderModuleUnique(module_info);
 
 		vk::PipelineShaderStageCreateInfo stage_info{};

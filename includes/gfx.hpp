@@ -67,6 +67,17 @@
 
 #define CAST_HANDLE_TO_INT(_handle) static_cast<std::uint32_t>(_handle)
 
+namespace sm
+{
+	template <class T>
+	inline void hash_combine(std::size_t& seed, const T& value)
+	{
+		std::hash<T> hasher{};
+		seed ^= hasher(value) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+	}
+
+} // namespace sm
+
 namespace sm::gfx
 {
 	GFX_DEFINE_HANDLE(DeviceHandle);
@@ -116,9 +127,24 @@ namespace sm::gfx
 	};
 	void submit_command_list(const SubmitInfo& submitInfo, FenceHandle* outFenceHandle, SemaphoreHandle* outSemaphoreHandle);
 
+	enum class DescriptorType
+	{
+		eStorageBuffer,
+		eUniformBuffer,
+	};
+	struct DescriptorBindingInfo
+	{
+		DescriptorType type;
+		std::uint32_t count;
+	};
+	struct DescriptorSetInfo
+	{
+		std::vector<DescriptorBindingInfo> bindings{};
+	};
 	struct ComputePipelineInfo
 	{
 		std::vector<char> shaderCode;
+		std::vector<DescriptorSetInfo> descriptorSets;
 	};
 	bool create_compute_pipeline(PipelineHandle& outPipelineHandle, DeviceHandle deviceHandle, const ComputePipelineInfo& computePipelineInfo);
 	void destroy_compute_pipeline(PipelineHandle pipelineHandle);
@@ -154,5 +180,29 @@ namespace sm::gfx
 #pragma endregion
 
 } // namespace sm::gfx
+
+namespace std
+{
+	template <>
+	struct hash<sm::gfx::DescriptorSetInfo>
+	{
+		std::size_t operator()(const sm::gfx::DescriptorSetInfo& descriptorSetInfo)
+		{
+			using std::hash;
+			using std::size_t;
+
+			size_t seed{};
+			sm::hash_combine(seed, descriptorSetInfo.bindings.size());
+			for (const auto& binding : descriptorSetInfo.bindings)
+			{
+				sm::hash_combine(seed, binding.type);
+				sm::hash_combine(seed, binding.count);
+			}
+
+			return seed;
+		}
+	};
+
+} // namespace std
 
 #endif // GFX_GFX_HPP
