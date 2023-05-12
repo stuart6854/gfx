@@ -113,6 +113,7 @@ int main()
 		gfx::reset(commandListHandle);
 		gfx::begin(commandListHandle);
 		gfx::bind_pipeline(commandListHandle, pipelineHandle);
+		gfx::dispatch(commandListHandle, 10, 1, 1);
 		gfx::end(commandListHandle);
 
 		gfx::SubmitInfo submitInfo{
