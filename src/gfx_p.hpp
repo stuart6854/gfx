@@ -91,6 +91,8 @@ namespace sm::gfx
 		/* Getters */
 
 		auto get_context() -> Context* { return m_context; }
+		auto get_physical_device() const -> vk::PhysicalDevice { return m_physicalDevice; }
+		auto get_device() const -> vk::Device { return m_device.get(); }
 
 	private:
 		auto create_fence() -> FenceHandle;
