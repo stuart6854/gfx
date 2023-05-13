@@ -54,7 +54,7 @@ namespace sm::gfx
 	{
 	public:
 		Device() = default;
-		Device(DeviceHandle deviceHandle, vk::Instance instance, const DeviceInfo& deviceInfo);
+		Device(Context& context, DeviceHandle deviceHandle, const DeviceInfo& deviceInfo);
 		~Device() = default;
 		DISABLE_COPY_AND_MOVE(Device);
 
@@ -82,12 +82,17 @@ namespace sm::gfx
 		bool map_buffer(BufferHandle bufferHandle, void*& outBufferPtr);
 		void unmap_buffer(BufferHandle bufferHandle);
 
+		/* Getters */
+
+		auto get_context() -> Context* { return m_context; }
+
 	private:
 		auto create_fence() -> FenceHandle;
 
 		static auto get_descriptor_set_layout_binding(const DescriptorBindingInfo& descriptorBindingInfo) -> vk::DescriptorSetLayoutBinding;
 
 	private:
+		Context* m_context{ nullptr };
 		DeviceHandle m_deviceHandle;
 
 		vk::PhysicalDevice m_physicalDevice;

@@ -470,7 +470,7 @@ namespace sm::gfx
 	{
 		auto deviceHandle = DeviceHandle(m_nextDeviceId);
 
-		auto device = std::make_unique<Device>(deviceHandle, s_context->get_instance(), deviceInfo);
+		auto device = std::make_unique<Device>(*this, deviceHandle, deviceInfo);
 		if (!device->is_valid())
 		{
 			return false;
@@ -503,10 +503,10 @@ namespace sm::gfx
 		return true;
 	}
 
-	Device::Device(DeviceHandle deviceHandle, vk::Instance instance, const DeviceInfo& deviceInfo)
-		: m_deviceHandle(deviceHandle)
+	Device::Device(Context& context, DeviceHandle deviceHandle, const DeviceInfo& deviceInfo)
+		: m_context(&context), m_deviceHandle(deviceHandle)
 	{
-		auto physicalDevices = instance.enumeratePhysicalDevices();
+		auto physicalDevices = m_context->get_instance().enumeratePhysicalDevices();
 		if (physicalDevices.empty())
 		{
 			s_errorCallback("GFX - There are no devices!");
@@ -630,7 +630,7 @@ namespace sm::gfx
 		}
 
 		vma::AllocatorCreateInfo allocator_info{};
-		allocator_info.setInstance(instance);
+		allocator_info.setInstance(m_context->get_instance());
 		allocator_info.setPhysicalDevice(m_physicalDevice);
 		allocator_info.setDevice(m_device.get());
 		allocator_info.setVulkanApiVersion(VK_API_VERSION_1_3);
@@ -1269,4 +1269,5 @@ namespace sm::gfx
 	}
 
 #pragma endregion
+
 } // namespace sm::gfx
