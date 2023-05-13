@@ -4,6 +4,7 @@
 
 #include "gfx.hpp"
 
+#define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 #if _WIN32
 	#define GLFW_EXPOSE_NATIVE_WIN32
@@ -38,6 +39,8 @@ int main()
 	constexpr std::uint32_t WINDOW_HEIGHT = 720;
 
 	glfwInit();
+
+	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 	auto* window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Hello Triangle", nullptr, nullptr);
 
 	gfx::set_error_callback([](const char* msg) {
