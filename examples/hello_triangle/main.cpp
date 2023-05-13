@@ -5,6 +5,12 @@
 #include "gfx.hpp"
 
 #include <GLFW/glfw3.h>
+#if _WIN32
+	#define GLFW_EXPOSE_NATIVE_WIN32
+#else
+	#error "Unsupported platform!"
+#endif
+#include <GLFW/glfw3native.h>
 
 #include <iostream>
 #include <fstream>
@@ -28,8 +34,11 @@ auto read_shader_file(const char* filename) -> std::vector<char>
 
 int main()
 {
+	constexpr std::uint32_t WINDOW_WIDTH = 1080;
+	constexpr std::uint32_t WINDOW_HEIGHT = 720;
+
 	glfwInit();
-	auto window = glfwCreateWindow(1080, 720, "Hello Triangle", nullptr, nullptr);
+	auto* window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Hello Triangle", nullptr, nullptr);
 
 	gfx::set_error_callback([](const char* msg) {
 		GFX_LOG_ERR(msg);
@@ -50,6 +59,22 @@ int main()
 	if (!gfx::create_device(deviceHandle, device_info))
 	{
 		throw std::runtime_error("Failed to create GFX device!");
+	}
+
+	void* platformWindowHandle{ nullptr };
+#if _WIN32
+	platformWindowHandle = glfwGetWin32Window(window);
+#endif
+
+	gfx::SwapChainInfo swapChainInfo{
+		.platformWindowHandle = platformWindowHandle,
+		.initialWidth = WINDOW_WIDTH,
+		.initialHeight = WINDOW_HEIGHT,
+	};
+	gfx::SwapChainHandle swapChainHandle{};
+	if (!gfx::create_swap_chain(swapChainHandle, deviceHandle, swapChainInfo))
+	{
+		throw std::runtime_error("Failed to create GFX swap chain!");
 	}
 
 	const auto vertShaderBinary = read_shader_file("triangle.vert.spv");
@@ -96,6 +121,8 @@ int main()
 
 		gfx::wait_on_fence(fenceHandle);
 	}
+
+	gfx::destroy_swap_chain(swapChainHandle);
 
 	gfx::destroy_device(deviceHandle);
 	gfx::shutdown();
