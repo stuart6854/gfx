@@ -88,6 +88,7 @@ namespace sm::gfx
 	GFX_DEFINE_RESOURCE_HANDLE(PipelineHandle);
 	GFX_DEFINE_RESOURCE_HANDLE(DescriptorSetHandle);
 	GFX_DEFINE_RESOURCE_HANDLE(BufferHandle);
+	GFX_DEFINE_RESOURCE_HANDLE(SwapChainHandle);
 
 	void set_error_callback(std::function<void(const char* msg)> callback);
 
@@ -179,6 +180,15 @@ namespace sm::gfx
 	void destroy_buffer(BufferHandle bufferHandle);
 	bool map_buffer(BufferHandle bufferHandle, void*& outBufferPtr);
 	void unmap_buffer(BufferHandle bufferHandle);
+
+	struct SwapChainInfo
+	{
+		void* platformWindowHandle; // Windows=HWND
+		std::int32_t initialWidth;
+		std::int32_t initialHeight;
+	};
+	bool create_swap_chain(SwapChainHandle& outSwapChainHandle, DeviceHandle deviceHandle, const SwapChainInfo& swapChainInfo);
+	void destroy_swap_chain(SwapChainHandle swapChainHandle);
 
 #pragma endregion
 

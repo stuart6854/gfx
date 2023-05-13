@@ -228,6 +228,24 @@ namespace sm::gfx
 		device->unmap_buffer(bufferHandle);
 	}
 
+	bool create_swap_chain(SwapChainHandle& outSwapChainHandle, DeviceHandle deviceHandle, const SwapChainInfo& swapChainInfo)
+	{
+		GFX_ASSERT(s_context && s_context->is_valid(), "GFX has not been initialised!");
+
+		Device* device{ nullptr };
+		if (!s_context->get_device(device, deviceHandle))
+		{
+			return false;
+		}
+		GFX_ASSERT(device != nullptr, "Device should not be null!");
+
+		return device->create_swap_chain(outSwapChainHandle, swapChainInfo);
+	}
+
+	void destroy_swap_chain(SwapChainHandle swapChainHandle)
+	{
+	}
+
 #pragma endregion
 
 #pragma region Command List Recording
@@ -652,6 +670,27 @@ namespace sm::gfx
 		return static_cast<bool>(*m_device);
 	}
 
+	bool Device::is_present_mode_supported(vk::PresentModeKHR presentMode, vk::SurfaceKHR surface) const
+	{
+		auto supportedPresentModes = m_physicalDevice.getSurfacePresentModesKHR(surface);
+		return std::ranges::find(supportedPresentModes, presentMode) != supportedPresentModes.end();
+	}
+
+	auto Device::get_first_supported_surface_format(const std::vector<vk::Format>& formats, vk::SurfaceKHR surface) -> vk::Format
+	{
+		const auto supportedSurfaceFormats = m_physicalDevice.getSurfaceFormatsKHR(surface);
+		for (const auto& format : formats)
+		{
+			for (const auto& surfaceFormat : supportedSurfaceFormats)
+			{
+				if (surfaceFormat.format == format)
+					return format;
+			}
+		}
+
+		return vk::Format::eUndefined;
+	}
+
 	void Device::wait_on_fence(FenceHandle fenceHandle)
 	{
 		vk::Fence fence = m_fenceMap.at(fenceHandle.resourceHandle).get();
@@ -901,6 +940,21 @@ namespace sm::gfx
 
 		const auto& buffer = m_bufferMap.at(bufferHandle.resourceHandle);
 		m_allocator->unmapMemory(buffer->get_allocation());
+	}
+
+	bool Device::create_swap_chain(SwapChainHandle& outSwapChainHandle, const SwapChainInfo& swapChainInfo)
+	{
+		SwapChainHandle swapChainHandle(m_deviceHandle, ResourceHandle(m_nextSwapChainId));
+
+		m_swapChainMap[swapChainHandle.resourceHandle] = std::make_unique<SwapChain>(*this, swapChainInfo);
+		m_nextSwapChainId += 1;
+
+		outSwapChainHandle = swapChainHandle;
+		return true;
+	}
+
+	void Device::destroy_swap_chain(SwapChainHandle swapChainHandle)
+	{
 	}
 
 	auto Device::create_fence() -> FenceHandle
@@ -1254,6 +1308,83 @@ namespace sm::gfx
 		vk_pipeline_info.setPNext(&rendering_info);
 
 		m_pipeline = device.createGraphicsPipelineUnique({}, vk_pipeline_info).value;
+	}
+
+	SwapChain::SwapChain(Device& device, const SwapChainInfo& swapChainInfo)
+		: m_device(&device)
+	{
+		auto* context = m_device->get_context();
+		GFX_ASSERT(context, "context should not be nullptr!");
+		auto vk_instance = context->get_instance();
+		GFX_ASSERT(vk_instance, "vk_instance should be valid!");
+
+#if _WIN32
+		HINSTANCE hinstance = GetModuleHandle(nullptr);
+		HWND hwnd = static_cast<HWND>(swapChainInfo.platformWindowHandle);
+		vk::Win32SurfaceCreateInfoKHR surface_info{};
+		surface_info.setHinstance(hinstance);
+		surface_info.setHwnd(hwnd);
+		m_surface = vk_instance.createWin32SurfaceKHRUnique(surface_info);
+#endif
+
+		resize(swapChainInfo.initialWidth, swapChainInfo.initialHeight);
+	}
+
+	SwapChain::SwapChain(SwapChain&& other) noexcept
+	{
+		std::swap(m_device, other.m_device);
+		std::swap(m_surface, other.m_surface);
+		std::swap(m_swapChain, other.m_swapChain);
+	}
+
+	void SwapChain::resize(std::int32_t width, std::uint32_t height)
+	{
+		auto surfaceCapabilities = m_device->get_physical_device().getSurfaceCapabilitiesKHR(m_surface.get());
+
+		std::uint32_t minImageCount = surfaceCapabilities.minImageCount + 1;
+		if (surfaceCapabilities.maxImageCount != -1 && minImageCount > surfaceCapabilities.maxImageCount)
+		{
+			minImageCount = surfaceCapabilities.maxImageCount;
+		}
+
+		const std::vector preferredSurfaceFormats{
+			vk::Format::eB8G8R8A8Srgb, vk::Format::eR8G8B8A8Srgb, vk::Format::eB8G8R8A8Unorm, vk::Format::eR8G8B8A8Unorm
+		};
+		auto surfaceFormat = vk::SurfaceFormatKHR(m_device->get_first_supported_surface_format(preferredSurfaceFormats, m_surface.get()), vk::ColorSpaceKHR::eSrgbNonlinear);
+
+		m_extent = vk::Extent2D(width, height);
+		m_extent.width = std::clamp(m_extent.width, surfaceCapabilities.minImageExtent.width, surfaceCapabilities.maxImageExtent.width);
+		m_extent.height = std::clamp(m_extent.height, surfaceCapabilities.minImageExtent.height, surfaceCapabilities.maxImageExtent.height);
+
+		auto presentMode = vk::PresentModeKHR::eFifo; // VSync. (FIFI is required to be supported.)
+		const auto preferredPresentMode = m_vsyncEnabled ? vk::PresentModeKHR::eMailbox : vk::PresentModeKHR::eImmediate;
+		if (m_device->is_present_mode_supported(preferredPresentMode, m_surface.get()))
+		{
+			presentMode = preferredPresentMode;
+		}
+
+		auto oldSwapChain = std::move(m_swapChain);
+
+		vk::SwapchainCreateInfoKHR swap_chain_info{};
+		swap_chain_info.setSurface(m_surface.get());
+		swap_chain_info.setMinImageCount(minImageCount);
+		swap_chain_info.setImageFormat(surfaceFormat.format);
+		swap_chain_info.setImageColorSpace(surfaceFormat.colorSpace);
+		swap_chain_info.setImageExtent(m_extent);
+		swap_chain_info.setImageArrayLayers(1);
+		swap_chain_info.setImageUsage(vk::ImageUsageFlagBits::eColorAttachment);
+		swap_chain_info.setPresentMode(presentMode);
+		swap_chain_info.setOldSwapchain(oldSwapChain.get());
+
+		m_swapChain = m_device->get_device().createSwapchainKHRUnique(swap_chain_info);
+	}
+
+	auto SwapChain::operator=(SwapChain&& rhs) noexcept -> SwapChain&
+	{
+		std::swap(m_device, rhs.m_device);
+		std::swap(m_surface, rhs.m_surface);
+		std::swap(m_swapChain, rhs.m_swapChain);
+		return *this;
 	}
 
 	VKAPI_ATTR VkBool32 VKAPI_CALL debug_utils_messenger_callback(

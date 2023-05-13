@@ -7,8 +7,14 @@
 
 #include "gfx.hpp"
 
+#if _WIN32
+	#define NOMINMAX
+	#define WIN32_LEAN_AND_MEAN
+	#define VK_USE_PLATFORM_WIN32_KHR
+#endif
 #define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
 #include <vulkan/vulkan.hpp>
+
 #define VMA_IMPLEMENTATION
 #include <vulkan-memory-allocator-hpp/vk_mem_alloc.hpp>
 
@@ -55,6 +61,7 @@ namespace sm::gfx
 	class CommandList;
 	class Pipeline;
 	class Buffer;
+	class SwapChain;
 
 	class Device
 	{
@@ -65,6 +72,9 @@ namespace sm::gfx
 		DISABLE_COPY_AND_MOVE(Device);
 
 		bool is_valid() const;
+
+		bool is_present_mode_supported(vk::PresentModeKHR presentMode, vk::SurfaceKHR surface) const;
+		auto get_first_supported_surface_format(const std::vector<vk::Format>& formats, vk::SurfaceKHR surface) -> vk::Format;
 
 		void wait_on_fence(FenceHandle fenceHandle);
 
@@ -87,6 +97,9 @@ namespace sm::gfx
 		void destroy_buffer(BufferHandle bufferHandle);
 		bool map_buffer(BufferHandle bufferHandle, void*& outBufferPtr);
 		void unmap_buffer(BufferHandle bufferHandle);
+
+		bool create_swap_chain(SwapChainHandle& outSwapChainHandle, const SwapChainInfo& swapChainInfo);
+		void destroy_swap_chain(SwapChainHandle swapChainHandle);
 
 		/* Getters */
 
@@ -130,6 +143,9 @@ namespace sm::gfx
 
 		std::unordered_map<ResourceHandle, std::unique_ptr<Buffer>> m_bufferMap;
 		std::uint32_t m_nextBufferId{ 1 };
+
+		std::unordered_map<ResourceHandle, std::unique_ptr<SwapChain>> m_swapChainMap;
+		std::uint32_t m_nextSwapChainId{ 1 };
 	};
 
 	class CommandList
@@ -266,6 +282,37 @@ namespace sm::gfx
 
 		vk::DescriptorType m_descriptorType;
 		vk::DescriptorBufferInfo m_descriptorInfo;
+	};
+
+	class SwapChain
+	{
+	public:
+		SwapChain() = default;
+		explicit SwapChain(Device& device, const SwapChainInfo& swapChainInfo);
+		SwapChain(SwapChain&& other) noexcept;
+		~SwapChain() = default;
+
+		GFX_DISABLE_COPY(SwapChain);
+
+		void resize(std::int32_t width, std::uint32_t height);
+
+		/* Getters */
+
+		auto get_surface() const -> vk::SurfaceKHR { return m_surface.get(); }
+		auto get_swap_chain() const -> vk::SwapchainKHR { return m_swapChain.get(); }
+
+		/* Operators */
+
+		auto operator=(SwapChain&& rhs) noexcept -> SwapChain&;
+
+	private:
+		Device* m_device{ nullptr };
+
+		vk::UniqueSurfaceKHR m_surface;
+		vk::UniqueSwapchainKHR m_swapChain;
+
+		vk::Extent2D m_extent;
+		bool m_vsyncEnabled{};
 	};
 
 } // namespace sm::gfx
