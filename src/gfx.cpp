@@ -430,6 +430,10 @@ namespace sm::gfx
 
 		std::vector<const char*> extensions = {
 			VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
+			VK_KHR_SURFACE_EXTENSION_NAME,
+#if _WIN32
+			VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
+#endif
 		};
 		std::vector<const char*> layers = {
 			"VK_LAYER_KHRONOS_validation",
@@ -546,6 +550,7 @@ namespace sm::gfx
 		m_physicalDevice = physicalDevices[bestDevice];
 
 		std::vector<const char*> extensions = {
+			VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 			VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
 		};
 
