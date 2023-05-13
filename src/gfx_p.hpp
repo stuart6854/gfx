@@ -17,6 +17,12 @@
 
 namespace sm::gfx
 {
+	VKAPI_ATTR VkBool32 VKAPI_CALL debug_utils_messenger_callback(
+		VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
+		VkDebugUtilsMessageTypeFlagsEXT message_type,
+		const VkDebugUtilsMessengerCallbackDataEXT* callback_data,
+		void* user_data);
+
 	class Device;
 
 	class Context

@@ -413,12 +413,6 @@ namespace sm::gfx
 
 #pragma region Private Header
 
-	VKAPI_ATTR VkBool32 VKAPI_CALL debug_utils_messenger_callback(
-		VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
-		VkDebugUtilsMessageTypeFlagsEXT message_type,
-		const VkDebugUtilsMessengerCallbackDataEXT* callback_data,
-		void* user_data);
-
 	Context::Context(const AppInfo& appInfo)
 	{
 		auto vkGetInstanceProcAddr = m_loader.getProcAddress<PFN_vkGetInstanceProcAddr>("vkGetInstanceProcAddr");
