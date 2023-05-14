@@ -1632,6 +1632,7 @@ namespace sm::gfx
 		m_imageIndex = device.acquireNextImageKHR(m_swapChain.get(), std::uint64_t(-1), {}, m_fence.get()).value;
 		auto result = device.waitForFences(m_fence.get(), VK_TRUE, std::uint64_t(-1));
 		GFX_UNUSED(result);
+		device.resetFences(m_fence.get());
 	}
 
 	VKAPI_ATTR VkBool32 VKAPI_CALL debug_utils_messenger_callback(
