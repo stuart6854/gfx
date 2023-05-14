@@ -120,7 +120,7 @@ int main()
 		gfx::FenceHandle fenceHandle;
 		gfx::submit_command_list(submitInfo, &fenceHandle, nullptr);
 
-		// #TODO: Present
+		gfx::present_swap_chain(swapChainHandle, 0, nullptr);
 
 		gfx::wait_on_fence(fenceHandle);
 	}

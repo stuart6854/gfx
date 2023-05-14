@@ -189,6 +189,7 @@ namespace sm::gfx
 	};
 	bool create_swap_chain(SwapChainHandle& outSwapChainHandle, DeviceHandle deviceHandle, const SwapChainInfo& swapChainInfo);
 	void destroy_swap_chain(SwapChainHandle swapChainHandle);
+	void present_swap_chain(SwapChainHandle swapChainHandle, std::uint32_t queueIndex, SemaphoreHandle* waitSemaphore);
 
 #pragma endregion
 

@@ -105,6 +105,7 @@ namespace sm::gfx
 
 		bool create_swap_chain(SwapChainHandle& outSwapChainHandle, const SwapChainInfo& swapChainInfo);
 		void destroy_swap_chain(SwapChainHandle swapChainHandle);
+		bool get_swap_chain(SwapChain*& outSwapChain, SwapChainHandle swapChainHandle);
 
 	private:
 		auto create_fence() -> FenceHandle;
@@ -294,15 +295,21 @@ namespace sm::gfx
 		GFX_DISABLE_COPY(SwapChain);
 
 		void resize(std::int32_t width, std::uint32_t height);
+		void present(vk::Queue queue, vk::Semaphore waitSemaphore);
 
 		/* Getters */
 
 		auto get_surface() const -> vk::SurfaceKHR { return m_surface.get(); }
 		auto get_swap_chain() const -> vk::SwapchainKHR { return m_swapChain.get(); }
 
+		auto get_image_index() const -> std::uint32_t { return m_imageIndex; }
+
 		/* Operators */
 
 		auto operator=(SwapChain&& rhs) noexcept -> SwapChain&;
+
+	protected:
+		void acquire_next_image_index();
 
 	private:
 		Device* m_device{ nullptr };
@@ -312,6 +319,9 @@ namespace sm::gfx
 
 		vk::Extent2D m_extent;
 		bool m_vsyncEnabled{};
+
+		std::uint32_t m_imageIndex{};
+		vk::UniqueFence m_fence;
 	};
 
 } // namespace sm::gfx

@@ -246,6 +246,37 @@ namespace sm::gfx
 	{
 	}
 
+	void present_swap_chain(SwapChainHandle swapChainHandle, std::uint32_t queueIndex, SemaphoreHandle* waitSemaphore)
+	{
+		GFX_ASSERT(s_context && s_context->is_valid(), "GFX has not been initialised!");
+
+		Device* device{ nullptr };
+		if (!s_context->get_device(device, swapChainHandle.deviceHandle))
+		{
+			return;
+		}
+		GFX_ASSERT(device != nullptr, "Device should not be null!");
+
+		vk::Queue queue{};
+		if (!device->get_queue(queue, queueIndex))
+		{
+			return;
+		}
+
+		SwapChain* swapChain{ nullptr };
+		if (!device->get_swap_chain(swapChain, swapChainHandle))
+		{
+			return;
+		}
+
+		vk::Semaphore wait_semaphore{};
+		if (waitSemaphore != nullptr)
+		{
+		}
+
+		swapChain->present(queue, wait_semaphore);
+	}
+
 #pragma endregion
 
 #pragma region Command List Recording
@@ -968,6 +999,18 @@ namespace sm::gfx
 	{
 	}
 
+	bool Device::get_swap_chain(SwapChain*& outSwapChain, SwapChainHandle swapChainHandle)
+	{
+		if (!m_swapChainMap.contains(swapChainHandle.resourceHandle))
+		{
+			outSwapChain = nullptr;
+			return false;
+		}
+
+		outSwapChain = m_swapChainMap.at(swapChainHandle.resourceHandle).get();
+		return true;
+	}
+
 	auto Device::create_fence() -> FenceHandle
 	{
 		auto fenceHandle = FenceHandle(m_deviceHandle, ResourceHandle(m_nextFenceId));
@@ -1338,7 +1381,11 @@ namespace sm::gfx
 		m_surface = vk_instance.createWin32SurfaceKHRUnique(surface_info);
 #endif
 
+		m_fence = m_device->get_device().createFenceUnique({});
+
 		resize(swapChainInfo.initialWidth, swapChainInfo.initialHeight);
+
+		acquire_next_image_index();
 	}
 
 	SwapChain::SwapChain(SwapChain&& other) noexcept
@@ -1390,12 +1437,35 @@ namespace sm::gfx
 		m_swapChain = m_device->get_device().createSwapchainKHRUnique(swap_chain_info);
 	}
 
+	void SwapChain::present(vk::Queue queue, vk::Semaphore waitSemaphore)
+	{
+		vk::PresentInfoKHR present_info{};
+		present_info.setSwapchains(m_swapChain.get());
+		present_info.setImageIndices(m_imageIndex);
+		if (waitSemaphore)
+		{
+			present_info.setWaitSemaphores(waitSemaphore);
+		}
+		auto result = queue.presentKHR(present_info);
+		GFX_UNUSED(result);
+
+		acquire_next_image_index();
+	}
+
 	auto SwapChain::operator=(SwapChain&& rhs) noexcept -> SwapChain&
 	{
 		std::swap(m_device, rhs.m_device);
 		std::swap(m_surface, rhs.m_surface);
 		std::swap(m_swapChain, rhs.m_swapChain);
 		return *this;
+	}
+
+	void SwapChain::acquire_next_image_index()
+	{
+		auto device = m_device->get_device();
+		m_imageIndex = device.acquireNextImageKHR(m_swapChain.get(), std::uint64_t(-1), {}, m_fence.get()).value;
+		auto result = device.waitForFences(m_fence.get(), VK_TRUE, std::uint64_t(-1));
+		GFX_UNUSED(result);
 	}
 
 	VKAPI_ATTR VkBool32 VKAPI_CALL debug_utils_messenger_callback(
