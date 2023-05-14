@@ -670,6 +670,17 @@ namespace sm::gfx
 		return static_cast<bool>(*m_device);
 	}
 
+	bool Device::get_queue(vk::Queue& outQueue, std::uint32_t queueIndex)
+	{
+		if (queueIndex > m_queues.size())
+		{
+			return false;
+		}
+
+		outQueue = m_queues.at(queueIndex);
+		return outQueue;
+	}
+
 	bool Device::is_present_mode_supported(vk::PresentModeKHR presentMode, vk::SurfaceKHR surface) const
 	{
 		auto supportedPresentModes = m_physicalDevice.getSurfacePresentModesKHR(surface);

@@ -73,6 +73,11 @@ namespace sm::gfx
 
 		bool is_valid() const;
 
+		auto get_context() -> Context* { return m_context; }
+		auto get_physical_device() const -> vk::PhysicalDevice { return m_physicalDevice; }
+		auto get_device() const -> vk::Device { return m_device.get(); }
+		bool get_queue(vk::Queue& outQueue, std::uint32_t queueIndex);
+
 		bool is_present_mode_supported(vk::PresentModeKHR presentMode, vk::SurfaceKHR surface) const;
 		auto get_first_supported_surface_format(const std::vector<vk::Format>& formats, vk::SurfaceKHR surface) -> vk::Format;
 
@@ -100,12 +105,6 @@ namespace sm::gfx
 
 		bool create_swap_chain(SwapChainHandle& outSwapChainHandle, const SwapChainInfo& swapChainInfo);
 		void destroy_swap_chain(SwapChainHandle swapChainHandle);
-
-		/* Getters */
-
-		auto get_context() -> Context* { return m_context; }
-		auto get_physical_device() const -> vk::PhysicalDevice { return m_physicalDevice; }
-		auto get_device() const -> vk::Device { return m_device.get(); }
 
 	private:
 		auto create_fence() -> FenceHandle;
