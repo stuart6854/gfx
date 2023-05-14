@@ -112,7 +112,6 @@ int main()
 			throw std::runtime_error("Failed to get SwapChain image handle!");
 		}
 
-		// #TODO: Transition SwapChain image to Attachment
 
 		// #TODO: Begin Render Pass
 		// #TODO: Set viewport
@@ -121,7 +120,7 @@ int main()
 		// #TODO: Draw
 		// #TODO: End Render Pass
 
-		// #TODO: Transition SwapChain image to PresentSrc
+		gfx::transition_texture(commandListHandle, swapChainImageHandle, gfx::TextureState::eUndefined, gfx::TextureState::ePresent);
 
 		gfx::end(commandListHandle);
 

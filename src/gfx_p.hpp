@@ -183,6 +183,8 @@ namespace sm::gfx
 		void draw(std::uint32_t vertex_count, std::uint32_t instance_count, std::uint32_t first_vertex, std::uint32_t first_instance);
 		void draw_indexed(std::uint32_t index_count, std::uint32_t instance_count, std::uint32_t first_index, std::int32_t vertex_offset, std::uint32_t first_instance);
 
+		void transition_texture(Texture* texture, TextureState oldState, TextureState newState);
+
 		/* Getters */
 
 		auto get_queue() const -> vk::Queue { return m_queue; }

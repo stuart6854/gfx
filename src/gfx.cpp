@@ -68,6 +68,31 @@ namespace sm::gfx
 		s_context->destroy_device(deviceHandle);
 	}
 
+#pragma endregion
+
+#pragma region Utility
+
+	static const std::unordered_map<TextureState, vk::ImageLayout> s_textureStateImageLayoutMap{
+		{ TextureState::eUndefined, vk::ImageLayout::eUndefined },
+		{ TextureState::eShaderRead, vk::ImageLayout::eShaderReadOnlyOptimal },
+		{ TextureState::eRenderTarget, vk::ImageLayout::eAttachmentOptimal },
+		{ TextureState::ePresent, vk::ImageLayout::ePresentSrcKHR },
+	};
+	static const std::unordered_map<TextureState, vk::PipelineStageFlagBits2> s_barrierTextureStatePipelineStageMaskMap{
+		{ TextureState::eUndefined, vk::PipelineStageFlagBits2::eTopOfPipe },
+		{ TextureState::eShaderRead, vk::PipelineStageFlagBits2::eFragmentShader },
+		{ TextureState::eRenderTarget, vk::PipelineStageFlagBits2::eColorAttachmentOutput },
+		{ TextureState::ePresent, vk::PipelineStageFlagBits2::eBottomOfPipe },
+	};
+	static const std::unordered_map<TextureState, vk::AccessFlagBits2> s_barrierTextureStateAccessMaskMap{
+		{ TextureState::eUndefined, vk::AccessFlagBits2::eNone },
+		{ TextureState::eShaderRead, vk::AccessFlagBits2::eShaderRead },
+		{ TextureState::eRenderTarget, vk::AccessFlagBits2::eColorAttachmentWrite },
+		{ TextureState::ePresent, vk::AccessFlagBits2::eNone },
+	};
+
+#pragma endregion
+
 #pragma region Device Resources
 
 	void wait_on_fence(FenceHandle fenceHandle)
@@ -495,6 +520,32 @@ namespace sm::gfx
 		commandList->draw_indexed(index_count, instance_count, first_index, vertex_offset, first_instance);
 	}
 
+	void transition_texture(CommandListHandle commandListHandle, TextureHandle textureHandle, TextureState oldState, TextureState newState)
+	{
+		GFX_ASSERT(s_context && s_context->is_valid(), "GFX has not been initialised!");
+
+		Device* device{ nullptr };
+		if (!s_context->get_device(device, commandListHandle.deviceHandle))
+		{
+			return;
+		}
+		GFX_ASSERT(device != nullptr, "Device should not be null!");
+
+		Texture* texture{ nullptr };
+		if (!device->get_texture(texture, textureHandle))
+		{
+			return;
+		}
+
+		CommandList* commandList{ nullptr };
+		if (!device->get_command_list(commandList, commandListHandle))
+		{
+			return;
+		}
+
+		commandList->transition_texture(texture, oldState, newState);
+	}
+
 #pragma endregion
 
 #pragma endregion
@@ -684,8 +735,8 @@ namespace sm::gfx
 		}
 
 		vk::PhysicalDeviceFeatures features{};
-		vk::PhysicalDeviceDynamicRenderingFeatures dynamic_rendering_features{};
-		dynamic_rendering_features.setDynamicRendering(true);
+		vk::PhysicalDeviceSynchronization2Features sync_2_features{ true };
+		vk::PhysicalDeviceDynamicRenderingFeatures dynamic_rendering_features{ true, &sync_2_features };
 
 		vk::DeviceCreateInfo vk_device_info{};
 		vk_device_info.setPEnabledExtensionNames(extensions);
@@ -1246,6 +1297,49 @@ namespace sm::gfx
 		}
 
 		m_commandBuffer->drawIndexed(index_count, instance_count, first_index, vertex_offset, first_instance);
+	}
+
+	void CommandList::transition_texture(Texture* texture, TextureState oldState, TextureState newState)
+	{
+		if (!m_hasBegun)
+		{
+			return;
+		}
+
+		GFX_ASSERT(s_textureStateImageLayoutMap.contains(oldState) && s_textureStateImageLayoutMap.contains(newState), "Unable to convert TextureState to vk::ImageLayout for barrier!");
+		GFX_ASSERT(s_barrierTextureStatePipelineStageMaskMap.contains(oldState) && s_barrierTextureStatePipelineStageMaskMap.contains(newState), "Unable to convert TextureState to vk::PipelineStage for barrier!");
+		GFX_ASSERT(s_barrierTextureStateAccessMaskMap.contains(oldState) && s_barrierTextureStateAccessMaskMap.contains(newState), "Unable to convert TextureState to vk::Access for barrier!");
+
+		vk::ImageSubresourceRange range{};
+		range.setAspectMask(vk::ImageAspectFlagBits::eColor); // #TODO: Get from texture.
+		range.setBaseArrayLayer(0);							  // #TODO: Optional.
+		range.setLayerCount(1);								  // #TODO: Optional.
+		range.setBaseMipLevel(0);							  // #TODO: Optional.
+		range.setLevelCount(1);								  // #TODO: Optional.
+
+		auto srcLayout = s_textureStateImageLayoutMap.at(oldState);
+		auto dstLayout = s_textureStateImageLayoutMap.at(newState);
+
+		auto srcStage = s_barrierTextureStatePipelineStageMaskMap.at(oldState);
+		auto dstStage = s_barrierTextureStatePipelineStageMaskMap.at(newState);
+
+		auto srcAccess = s_barrierTextureStateAccessMaskMap.at(oldState);
+		auto dstAccess = s_barrierTextureStateAccessMaskMap.at(newState);
+
+		vk::ImageMemoryBarrier2 barrier{};
+		barrier.setImage(texture->get_image());
+		barrier.setOldLayout(srcLayout);
+		barrier.setNewLayout(dstLayout);
+		barrier.setSrcStageMask(srcStage);
+		barrier.setDstStageMask(dstStage);
+		barrier.setSrcAccessMask(srcAccess);
+		barrier.setDstAccessMask(dstAccess);
+		barrier.setSubresourceRange(range);
+
+		vk::DependencyInfo dependency_info{};
+		dependency_info.setImageMemoryBarriers(barrier);
+
+		m_commandBuffer->pipelineBarrier2(dependency_info);
 	}
 
 	auto CommandList::operator=(CommandList&& rhs) noexcept -> CommandList&
