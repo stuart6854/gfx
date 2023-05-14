@@ -76,6 +76,7 @@ namespace sm::gfx
 		auto get_context() -> Context* { return m_context; }
 		auto get_physical_device() const -> vk::PhysicalDevice { return m_physicalDevice; }
 		auto get_device() const -> vk::Device { return m_device.get(); }
+		auto get_allocator() const -> vma::Allocator { return m_allocator.get(); }
 		bool get_queue(vk::Queue& outQueue, std::uint32_t queueIndex);
 
 		bool is_present_mode_supported(vk::PresentModeKHR presentMode, vk::SurfaceKHR surface) const;
