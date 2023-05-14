@@ -88,6 +88,7 @@ namespace sm::gfx
 	GFX_DEFINE_RESOURCE_HANDLE(PipelineHandle);
 	GFX_DEFINE_RESOURCE_HANDLE(DescriptorSetHandle);
 	GFX_DEFINE_RESOURCE_HANDLE(BufferHandle);
+	GFX_DEFINE_RESOURCE_HANDLE(TextureHandle);
 	GFX_DEFINE_RESOURCE_HANDLE(SwapChainHandle);
 
 	void set_error_callback(std::function<void(const char* msg)> callback);
@@ -181,6 +182,28 @@ namespace sm::gfx
 	bool map_buffer(BufferHandle bufferHandle, void*& outBufferPtr);
 	void unmap_buffer(BufferHandle bufferHandle);
 
+	enum class Format
+	{
+		eUndefined,
+		eRGBA8,
+	};
+	enum class TextureType
+	{
+		e1D,
+		e2D,
+		e3D,
+	};
+	struct TextureInfo
+	{
+		TextureType type{};
+		std::uint32_t width{};
+		std::uint32_t height{};
+		Format format{};
+		std::uint32_t mipLevels{ 1 };
+	};
+	bool create_texture(TextureHandle& outTextureHandle, DeviceHandle deviceHandle, const TextureInfo& textureInfo);
+	void destroy_texture(TextureHandle textureHandle);
+
 	struct SwapChainInfo
 	{
 		void* platformWindowHandle; // Windows=HWND
@@ -190,6 +213,7 @@ namespace sm::gfx
 	bool create_swap_chain(SwapChainHandle& outSwapChainHandle, DeviceHandle deviceHandle, const SwapChainInfo& swapChainInfo);
 	void destroy_swap_chain(SwapChainHandle swapChainHandle);
 	void present_swap_chain(SwapChainHandle swapChainHandle, std::uint32_t queueIndex, SemaphoreHandle* waitSemaphore);
+	bool get_swap_chain_image(TextureHandle& outTextureHandle, SwapChainHandle swapChainHandle);
 
 #pragma endregion
 

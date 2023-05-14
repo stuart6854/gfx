@@ -228,6 +228,24 @@ namespace sm::gfx
 		device->unmap_buffer(bufferHandle);
 	}
 
+	bool create_texture(TextureHandle& outTextureHandle, DeviceHandle deviceHandle, const TextureInfo& textureInfo)
+	{
+		GFX_ASSERT(s_context && s_context->is_valid(), "GFX has not been initialised!");
+
+		Device* device{ nullptr };
+		if (!s_context->get_device(device, deviceHandle))
+		{
+			return false;
+		}
+		GFX_ASSERT(device != nullptr, "Device should not be null!");
+
+		return device->create_texture(outTextureHandle, textureInfo);
+	}
+
+	void destroy_texture(TextureHandle textureHandle)
+	{
+	}
+
 	bool create_swap_chain(SwapChainHandle& outSwapChainHandle, DeviceHandle deviceHandle, const SwapChainInfo& swapChainInfo)
 	{
 		GFX_ASSERT(s_context && s_context->is_valid(), "GFX has not been initialised!");
@@ -275,6 +293,27 @@ namespace sm::gfx
 		}
 
 		swapChain->present(queue, wait_semaphore);
+	}
+
+	bool get_swap_chain_image(TextureHandle& outTextureHandle, SwapChainHandle swapChainHandle)
+	{
+		GFX_ASSERT(s_context && s_context->is_valid(), "GFX has not been initialised!");
+
+		Device* device{ nullptr };
+		if (!s_context->get_device(device, swapChainHandle.deviceHandle))
+		{
+			return false;
+		}
+		GFX_ASSERT(device != nullptr, "Device should not be null!");
+
+		SwapChain* swapChain{ nullptr };
+		if (!device->get_swap_chain(swapChain, swapChainHandle))
+		{
+			return false;
+		}
+
+		outTextureHandle = swapChain->get_current_image_handle();
+		return outTextureHandle.fullHandle > 0;
 	}
 
 #pragma endregion
@@ -984,6 +1023,43 @@ namespace sm::gfx
 		m_allocator->unmapMemory(buffer->get_allocation());
 	}
 
+	bool Device::create_texture(TextureHandle& outTextureHandle, const TextureInfo& textureInfo)
+	{
+		TextureHandle textureHandle(m_deviceHandle, ResourceHandle(m_nextTextureId));
+
+		m_textureMap[textureHandle.resourceHandle] = std::make_unique<Texture>(*this, textureInfo);
+		m_nextTextureId += 1;
+
+		outTextureHandle = textureHandle;
+		return true;
+	}
+
+	bool Device::create_texture(TextureHandle& outTextureHandle, vk::Image image)
+	{
+		TextureHandle textureHandle(m_deviceHandle, ResourceHandle(m_nextTextureId));
+
+		m_textureMap[textureHandle.resourceHandle] = std::make_unique<Texture>(*this, image);
+		m_nextTextureId += 1;
+
+		outTextureHandle = textureHandle;
+		return true;
+	}
+
+	void Device::destroy_texture(TextureHandle textureHandle)
+	{
+	}
+
+	bool Device::get_texture(Texture*& outTexture, TextureHandle textureHandle)
+	{
+		if (!m_textureMap.contains(textureHandle.resourceHandle))
+		{
+			return false;
+		}
+
+		outTexture = m_textureMap.at(textureHandle.resourceHandle).get();
+		return true;
+	}
+
 	bool Device::create_swap_chain(SwapChainHandle& outSwapChainHandle, const SwapChainInfo& swapChainInfo)
 	{
 		SwapChainHandle swapChainHandle(m_deviceHandle, ResourceHandle(m_nextSwapChainId));
@@ -1230,6 +1306,71 @@ namespace sm::gfx
 		return *this;
 	}
 
+	Texture::Texture(Device& device, const TextureInfo& textureInfo)
+		: m_device(&device)
+	{
+		m_extent = vk::Extent3D(textureInfo.width, textureInfo.height, 1);
+
+		vk::ImageCreateInfo image_info{};
+		image_info.setExtent(m_extent);
+		image_info.setMipLevels(m_mipLevels);
+		image_info.setFormat(m_format);
+		image_info.setUsage(m_usageFlags);
+		image_info.setImageType(m_type);
+		image_info.setArrayLayers(1);						// #TODO: Optional.
+		image_info.setTiling(vk::ImageTiling::eOptimal);
+		image_info.setSamples(vk::SampleCountFlagBits::e1); // #TODO: Optional.
+
+		vma::AllocationCreateInfo alloc_info{};
+		alloc_info.setUsage(vma::MemoryUsage::eAutoPreferDevice);						// #TODO: Make optional.
+		alloc_info.setFlags(vma::AllocationCreateFlagBits::eHostAccessSequentialWrite); // #TODO: Optional.
+
+		auto allocator = m_device->get_allocator();
+		std::tie(m_image, m_allocation) = allocator.createImage(image_info, alloc_info);
+	}
+
+	Texture::Texture(Device& device, vk::Image image)
+		: m_device(&device), m_image(image)
+	{
+	}
+
+	Texture::Texture(Texture&& other) noexcept
+	{
+		std::swap(m_device, other.m_device);
+		std::swap(m_image, other.m_image);
+		std::swap(m_allocation, other.m_allocation);
+		std::swap(m_extent, other.m_extent);
+		std::swap(m_mipLevels, other.m_mipLevels);
+		std::swap(m_format, other.m_format);
+		std::swap(m_usageFlags, other.m_usageFlags);
+		std::swap(m_type, other.m_type);
+		std::swap(m_layout, other.m_layout);
+	}
+
+	Texture::~Texture()
+	{
+		const bool was_allocated = m_image && m_allocation;
+		if (was_allocated)
+		{
+			auto allocator = m_device->get_allocator();
+			allocator.destroyImage(m_image, m_allocation);
+		}
+	}
+
+	auto Texture::operator=(Texture&& rhs) noexcept -> Texture&
+	{
+		std::swap(m_device, rhs.m_device);
+		std::swap(m_image, rhs.m_image);
+		std::swap(m_allocation, rhs.m_allocation);
+		std::swap(m_extent, rhs.m_extent);
+		std::swap(m_mipLevels, rhs.m_mipLevels);
+		std::swap(m_format, rhs.m_format);
+		std::swap(m_usageFlags, rhs.m_usageFlags);
+		std::swap(m_type, rhs.m_type);
+		std::swap(m_layout, rhs.m_layout);
+		return *this;
+	}
+
 	Pipeline::Pipeline(PipelineType pipelineType, const std::vector<vk::DescriptorSetLayout>& setLayouts)
 		: m_pipelineType(pipelineType), m_setLayouts(setLayouts)
 	{
@@ -1395,8 +1536,15 @@ namespace sm::gfx
 		std::swap(m_swapChain, other.m_swapChain);
 	}
 
+	SwapChain::~SwapChain()
+	{
+		cleanup();
+	}
+
 	void SwapChain::resize(std::int32_t width, std::uint32_t height)
 	{
+		cleanup();
+
 		auto surfaceCapabilities = m_device->get_physical_device().getSurfaceCapabilitiesKHR(m_surface.get());
 
 		std::uint32_t minImageCount = surfaceCapabilities.minImageCount + 1;
@@ -1434,7 +1582,16 @@ namespace sm::gfx
 		swap_chain_info.setPresentMode(presentMode);
 		swap_chain_info.setOldSwapchain(oldSwapChain.get());
 
-		m_swapChain = m_device->get_device().createSwapchainKHRUnique(swap_chain_info);
+		auto vk_device = m_device->get_device();
+		m_swapChain = vk_device.createSwapchainKHRUnique(swap_chain_info);
+
+		auto images = vk_device.getSwapchainImagesKHR(m_swapChain.get());
+		m_imageHandles.resize(images.size());
+		for (auto i = 0; i < images.size(); ++i)
+		{
+			bool success = m_device->create_texture(m_imageHandles[i], images[i]);
+			GFX_ASSERT(success, "Failed to create Texture from SwapChain image!");
+		}
 	}
 
 	void SwapChain::present(vk::Queue queue, vk::Semaphore waitSemaphore)
@@ -1458,6 +1615,15 @@ namespace sm::gfx
 		std::swap(m_surface, rhs.m_surface);
 		std::swap(m_swapChain, rhs.m_swapChain);
 		return *this;
+	}
+
+	void SwapChain::cleanup()
+	{
+		for (auto imageHandle : m_imageHandles)
+		{
+			m_device->destroy_texture(imageHandle);
+		}
+		m_imageHandles.clear();
 	}
 
 	void SwapChain::acquire_next_image_index()

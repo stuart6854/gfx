@@ -61,6 +61,7 @@ namespace sm::gfx
 	class CommandList;
 	class Pipeline;
 	class Buffer;
+	class Texture;
 	class SwapChain;
 
 	class Device
@@ -104,6 +105,11 @@ namespace sm::gfx
 		bool map_buffer(BufferHandle bufferHandle, void*& outBufferPtr);
 		void unmap_buffer(BufferHandle bufferHandle);
 
+		bool create_texture(TextureHandle& outTextureHandle, const TextureInfo& textureInfo);
+		bool create_texture(TextureHandle& outTextureHandle, vk::Image image);
+		void destroy_texture(TextureHandle textureHandle);
+		bool get_texture(Texture*& outTexture, TextureHandle textureHandle);
+
 		bool create_swap_chain(SwapChainHandle& outSwapChainHandle, const SwapChainInfo& swapChainInfo);
 		void destroy_swap_chain(SwapChainHandle swapChainHandle);
 		bool get_swap_chain(SwapChain*& outSwapChain, SwapChainHandle swapChainHandle);
@@ -144,6 +150,9 @@ namespace sm::gfx
 
 		std::unordered_map<ResourceHandle, std::unique_ptr<Buffer>> m_bufferMap;
 		std::uint32_t m_nextBufferId{ 1 };
+
+		std::unordered_map<ResourceHandle, std::unique_ptr<Texture>> m_textureMap;
+		std::uint32_t m_nextTextureId{ 1 };
 
 		std::unordered_map<ResourceHandle, std::unique_ptr<SwapChain>> m_swapChainMap;
 		std::uint32_t m_nextSwapChainId{ 1 };
@@ -285,13 +294,53 @@ namespace sm::gfx
 		vk::DescriptorBufferInfo m_descriptorInfo;
 	};
 
+	class Texture
+	{
+	public:
+		Texture() = default;
+		explicit Texture(Device& device, const TextureInfo& textureInfo);
+		explicit Texture(Device& device, vk::Image image);
+		Texture(Texture&& other) noexcept;
+		~Texture();
+
+		GFX_DISABLE_COPY(Texture);
+
+		/* Getters */
+
+		auto get_image() const -> vk::Image { return m_image; }
+		auto get_allocation() const -> vma::Allocation { return m_allocation; }
+
+		auto get_extent() const -> vk::Extent3D { return m_extent; }
+		auto get_format() const -> vk::Format { return m_format; }
+
+		auto get_layout() const -> vk::ImageLayout { return m_layout; }
+
+		/* Operators */
+
+		auto operator=(Texture&& rhs) noexcept -> Texture&;
+
+	private:
+		Device* m_device{ nullptr };
+
+		vk::Image m_image;
+		vma::Allocation m_allocation;
+
+		vk::Extent3D m_extent;
+		std::uint32_t m_mipLevels;
+		vk::Format m_format;
+		vk::ImageUsageFlags m_usageFlags;
+		vk::ImageType m_type;
+
+		vk::ImageLayout m_layout;
+	};
+
 	class SwapChain
 	{
 	public:
 		SwapChain() = default;
 		explicit SwapChain(Device& device, const SwapChainInfo& swapChainInfo);
 		SwapChain(SwapChain&& other) noexcept;
-		~SwapChain() = default;
+		~SwapChain();
 
 		GFX_DISABLE_COPY(SwapChain);
 
@@ -304,12 +353,15 @@ namespace sm::gfx
 		auto get_swap_chain() const -> vk::SwapchainKHR { return m_swapChain.get(); }
 
 		auto get_image_index() const -> std::uint32_t { return m_imageIndex; }
+		auto get_current_image_handle() const -> TextureHandle { return m_imageHandles.at(m_imageIndex); }
 
 		/* Operators */
 
 		auto operator=(SwapChain&& rhs) noexcept -> SwapChain&;
 
 	protected:
+		void cleanup();
+
 		void acquire_next_image_index();
 
 	private:
@@ -323,6 +375,8 @@ namespace sm::gfx
 
 		std::uint32_t m_imageIndex{};
 		vk::UniqueFence m_fence;
+
+		std::vector<TextureHandle> m_imageHandles;
 	};
 
 } // namespace sm::gfx

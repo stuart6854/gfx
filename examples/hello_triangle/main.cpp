@@ -105,12 +105,24 @@ int main()
 
 		gfx::reset(commandListHandle);
 		gfx::begin(commandListHandle);
+
+		gfx::TextureHandle swapChainImageHandle{};
+		if (!gfx::get_swap_chain_image(swapChainImageHandle, swapChainHandle))
+		{
+			throw std::runtime_error("Failed to get SwapChain image handle!");
+		}
+
+		// #TODO: Transition SwapChain image to Attachment
+
 		// #TODO: Begin Render Pass
 		// #TODO: Set viewport
 		// #TODO: Set scissor
 		gfx::bind_pipeline(commandListHandle, pipelineHandle);
 		// #TODO: Draw
 		// #TODO: End Render Pass
+
+		// #TODO: Transition SwapChain image to PresentSrc
+
 		gfx::end(commandListHandle);
 
 		gfx::SubmitInfo submitInfo{
