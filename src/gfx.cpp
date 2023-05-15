@@ -461,6 +461,46 @@ namespace sm::gfx
 		commandList->end_render_pass();
 	}
 
+	void set_viewport(CommandListHandle commandListHandle, float x, float y, float width, float height, float minDepth, float maxDepth)
+	{
+		GFX_ASSERT(s_context && s_context->is_valid(), "GFX has not been initialised!");
+
+		Device* device{ nullptr };
+		if (!s_context->get_device(device, commandListHandle.deviceHandle))
+		{
+			return;
+		}
+		GFX_ASSERT(device != nullptr, "Device should not be null!");
+
+		CommandList* commandList{ nullptr };
+		if (!device->get_command_list(commandList, commandListHandle))
+		{
+			return;
+		}
+
+		commandList->set_viewport(x, y, width, height, minDepth, maxDepth);
+	}
+
+	void set_scissor(CommandListHandle commandListHandle, std::int32_t x, std::int32_t y, std::uint32_t width, std::uint32_t height)
+	{
+		GFX_ASSERT(s_context && s_context->is_valid(), "GFX has not been initialised!");
+
+		Device* device{ nullptr };
+		if (!s_context->get_device(device, commandListHandle.deviceHandle))
+		{
+			return;
+		}
+		GFX_ASSERT(device != nullptr, "Device should not be null!");
+
+		CommandList* commandList{ nullptr };
+		if (!device->get_command_list(commandList, commandListHandle))
+		{
+			return;
+		}
+
+		commandList->set_scissor(x, y, width, height);
+	}
+
 	void bind_pipeline(CommandListHandle commandListHandle, PipelineHandle pipelineHandle)
 	{
 		GFX_ASSERT(s_context && s_context->is_valid(), "GFX has not been initialised!");
@@ -1344,6 +1384,28 @@ namespace sm::gfx
 		}
 
 		m_commandBuffer->endRendering();
+	}
+
+	void CommandList::set_viewport(float x, float y, float width, float height, float minDepth, float maxDepth)
+	{
+		if (!m_hasBegun)
+		{
+			return;
+		}
+
+		vk::Viewport viewport{ x, y, width, height, minDepth, maxDepth };
+		m_commandBuffer->setViewport(0, viewport);
+	}
+
+	void CommandList::set_scissor(std::int32_t x, std::int32_t y, std::uint32_t width, std::uint32_t height)
+	{
+		if (!m_hasBegun)
+		{
+			return;
+		}
+
+		vk::Rect2D scissor{ { x, y }, { width, height } };
+		m_commandBuffer->setScissor(0, scissor);
 	}
 
 	void CommandList::bind_pipeline(Pipeline* pipeline)

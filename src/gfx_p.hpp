@@ -178,6 +178,9 @@ namespace sm::gfx
 		void begin_render_pass(const std::vector<Texture*>& colorAttachmentTextures, Texture* depthAttachmentTexture, const std::array<float, 4>& clearColor);
 		void end_render_pass();
 
+		void set_viewport(float x, float y, float width, float height, float minDepth, float maxDepth);
+		void set_scissor(std::int32_t x, std::int32_t y, std::uint32_t width, std::uint32_t height);
+
 		void bind_pipeline(Pipeline* pipeline);
 		void bind_descriptor_set(vk::DescriptorSet descriptorSet);
 

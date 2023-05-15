@@ -234,6 +234,9 @@ namespace sm::gfx
 	void begin_render_pass(CommandListHandle commandListHandle, const RenderPassInfo& renderPassInfo);
 	void end_render_pass(CommandListHandle commandListHandle);
 
+	void set_viewport(CommandListHandle commandListHandle, float x, float y, float width, float height, float minDepth = 0.0f, float maxDepth = 1.0f);
+	void set_scissor(CommandListHandle commandListHandle, std::int32_t x, std::int32_t y, std::uint32_t width, std::uint32_t height);
+
 	void bind_pipeline(CommandListHandle commandListHandle, PipelineHandle pipelineHandle);
 	void bind_descriptor_set(CommandListHandle commandListHandle, DescriptorSetHandle descriptorSetHandle);
 

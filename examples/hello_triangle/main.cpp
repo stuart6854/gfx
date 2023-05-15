@@ -121,8 +121,9 @@ int main()
 		};
 		gfx::begin_render_pass(commandListHandle, renderPassInfo);
 		{
-			// #TODO: Set viewport
-			// #TODO: Set scissor
+			gfx::set_viewport(commandListHandle, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+			gfx::set_scissor(commandListHandle, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+			
 			gfx::bind_pipeline(commandListHandle, pipelineHandle);
 			// #TODO: Draw
 		}
