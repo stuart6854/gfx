@@ -175,6 +175,9 @@ namespace sm::gfx
 		void begin();
 		void end();
 
+		void begin_render_pass(const std::vector<Texture*>& colorAttachmentTextures, Texture* depthAttachmentTexture, const std::array<float, 4>& clearColor);
+		void end_render_pass();
+
 		void bind_pipeline(Pipeline* pipeline);
 		void bind_descriptor_set(vk::DescriptorSet descriptorSet);
 

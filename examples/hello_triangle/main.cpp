@@ -112,15 +112,23 @@ int main()
 			throw std::runtime_error("Failed to get SwapChain image handle!");
 		}
 
+		gfx::transition_texture(commandListHandle, swapChainImageHandle, gfx::TextureState::eUndefined, gfx::TextureState::eRenderTarget);
 
-		// #TODO: Begin Render Pass
-		// #TODO: Set viewport
-		// #TODO: Set scissor
-		gfx::bind_pipeline(commandListHandle, pipelineHandle);
-		// #TODO: Draw
-		// #TODO: End Render Pass
+		gfx::RenderPassInfo renderPassInfo{
+			.colorAttachments = { swapChainImageHandle },
+			.depthAttachment = {},
+			.clearColor = { 1.0f, 0.3f, 0.3f, 1.0f },
+		};
+		gfx::begin_render_pass(commandListHandle, renderPassInfo);
+		{
+			// #TODO: Set viewport
+			// #TODO: Set scissor
+			gfx::bind_pipeline(commandListHandle, pipelineHandle);
+			// #TODO: Draw
+		}
+		gfx::end_render_pass(commandListHandle);
 
-		gfx::transition_texture(commandListHandle, swapChainImageHandle, gfx::TextureState::eUndefined, gfx::TextureState::ePresent);
+		gfx::transition_texture(commandListHandle, swapChainImageHandle, gfx::TextureState::eRenderTarget, gfx::TextureState::ePresent);
 
 		gfx::end(commandListHandle);
 
@@ -131,9 +139,9 @@ int main()
 		gfx::FenceHandle fenceHandle;
 		gfx::submit_command_list(submitInfo, &fenceHandle, nullptr);
 
-		gfx::present_swap_chain(swapChainHandle, 0, nullptr);
-
 		gfx::wait_on_fence(fenceHandle);
+		
+		gfx::present_swap_chain(swapChainHandle, 0, nullptr);
 	}
 
 	gfx::destroy_swap_chain(swapChainHandle);

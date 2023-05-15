@@ -407,6 +407,60 @@ namespace sm::gfx
 		commandList->end();
 	}
 
+	void begin_render_pass(CommandListHandle commandListHandle, const RenderPassInfo& renderPassInfo)
+	{
+		GFX_ASSERT(s_context && s_context->is_valid(), "GFX has not been initialised!");
+
+		Device* device{ nullptr };
+		if (!s_context->get_device(device, commandListHandle.deviceHandle))
+		{
+			return;
+		}
+		GFX_ASSERT(device != nullptr, "Device should not be null!");
+
+		CommandList* commandList{ nullptr };
+		if (!device->get_command_list(commandList, commandListHandle))
+		{
+			return;
+		}
+
+		std::vector<Texture*> colorAttachments(renderPassInfo.colorAttachments.size());
+		for (auto i = 0; i < colorAttachments.size(); ++i)
+		{
+			auto success = device->get_texture(colorAttachments[i], renderPassInfo.colorAttachments[i]);
+			GFX_ASSERT(success, "Failed to get Texture for color attachment from handle!");
+		}
+
+		Texture* depthAttachment{ nullptr };
+		if (renderPassInfo.depthAttachment.fullHandle != 0)
+		{
+			auto success = device->get_texture(depthAttachment, renderPassInfo.depthAttachment);
+			GFX_ASSERT(success, "Failed to get Texture for depth attachment from handle!");
+		}
+
+		commandList->begin_render_pass(colorAttachments, depthAttachment, renderPassInfo.clearColor);
+	}
+
+	void end_render_pass(CommandListHandle commandListHandle)
+	{
+		GFX_ASSERT(s_context && s_context->is_valid(), "GFX has not been initialised!");
+
+		Device* device{ nullptr };
+		if (!s_context->get_device(device, commandListHandle.deviceHandle))
+		{
+			return;
+		}
+		GFX_ASSERT(device != nullptr, "Device should not be null!");
+
+		CommandList* commandList{ nullptr };
+		if (!device->get_command_list(commandList, commandListHandle))
+		{
+			return;
+		}
+
+		commandList->end_render_pass();
+	}
+
 	void bind_pipeline(CommandListHandle commandListHandle, PipelineHandle pipelineHandle)
 	{
 		GFX_ASSERT(s_context && s_context->is_valid(), "GFX has not been initialised!");
@@ -1236,6 +1290,60 @@ namespace sm::gfx
 		}
 
 		m_commandBuffer->end();
+	}
+
+	void CommandList::begin_render_pass(const std::vector<Texture*>& colorAttachmentTextures, Texture* depthAttachmentTexture, const std::array<float, 4>& clearColor)
+	{
+		if (!m_hasBegun)
+		{
+			return;
+		}
+
+		std::vector<vk::RenderingAttachmentInfo> colorAttachments(colorAttachmentTextures.size());
+		for (auto i = 0; i < colorAttachments.size(); ++i)
+		{
+			auto* texture = colorAttachmentTextures[i];
+			auto& attachment = colorAttachments[i];
+			attachment.setImageView(texture->get_view());
+			attachment.setImageLayout(vk::ImageLayout::eAttachmentOptimal);
+			attachment.setLoadOp(vk::AttachmentLoadOp::eClear); // #TODO: Optional.
+			attachment.setStoreOp(vk::AttachmentStoreOp::eStore);
+			attachment.setClearValue(vk::ClearColorValue(clearColor));
+		}
+
+		vk::RenderingAttachmentInfo depthAttachment{};
+		if (depthAttachmentTexture != nullptr)
+		{
+			depthAttachment.setImageView({});									// #TODO: Image views
+			depthAttachment.setImageLayout(vk::ImageLayout::eAttachmentOptimal);
+			depthAttachment.setLoadOp(vk::AttachmentLoadOp::eClear);			// #TODO: Optional.
+			depthAttachment.setStoreOp(vk::AttachmentStoreOp::eDontCare);
+			depthAttachment.setClearValue(vk::ClearDepthStencilValue(1.0f, 0)); // #TODO: Optional.
+		}
+
+		auto textureExtent = colorAttachmentTextures.front()->get_extent();
+		vk::Rect2D renderArea{ vk::Offset2D{ 0, 0 }, vk::Extent2D{ textureExtent.width, textureExtent.height } };
+
+		vk::RenderingInfo rendering_info{};
+		rendering_info.setLayerCount(1);
+		rendering_info.setColorAttachments(colorAttachments);
+		if (depthAttachmentTexture != nullptr)
+		{
+			rendering_info.setPDepthAttachment(&depthAttachment);
+		}
+		rendering_info.setRenderArea(renderArea);
+
+		m_commandBuffer->beginRendering(rendering_info);
+	}
+
+	void CommandList::end_render_pass()
+	{
+		if (!m_hasBegun)
+		{
+			return;
+		}
+
+		m_commandBuffer->endRendering();
 	}
 
 	void CommandList::bind_pipeline(Pipeline* pipeline)

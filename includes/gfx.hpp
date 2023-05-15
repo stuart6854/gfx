@@ -5,6 +5,7 @@
 #ifndef GFX_GFX_HPP
 #define GFX_GFX_HPP
 
+#include <array>
 #include <cstdint>
 #include <functional>
 #include <string_view>
@@ -223,6 +224,15 @@ namespace sm::gfx
 
 	bool begin(CommandListHandle commandListHandle);
 	void end(CommandListHandle commandListHandle);
+
+	struct RenderPassInfo
+	{
+		std::vector<TextureHandle> colorAttachments;
+		TextureHandle depthAttachment;
+		std::array<float, 4> clearColor{ 1.0f, 1.0f, 1.0f, 1.0f };
+	};
+	void begin_render_pass(CommandListHandle commandListHandle, const RenderPassInfo& renderPassInfo);
+	void end_render_pass(CommandListHandle commandListHandle);
 
 	void bind_pipeline(CommandListHandle commandListHandle, PipelineHandle pipelineHandle);
 	void bind_descriptor_set(CommandListHandle commandListHandle, DescriptorSetHandle descriptorSetHandle);
