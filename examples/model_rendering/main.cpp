@@ -170,6 +170,19 @@ int main()
 		throw std::runtime_error("Failed to create GFX swap chain!");
 	}
 
+	gfx::TextureInfo depthTextureInfo{
+		.usage = gfx::TextureUsage::eDepthStencilAttachment,
+		.type = gfx::TextureType::e2D,
+		.width = WINDOW_WIDTH,
+		.height = WINDOW_HEIGHT,
+		.format = gfx::Format::eDepth16,
+	};
+	gfx::TextureHandle depthTextureHandle{};
+	if (!gfx::create_texture(depthTextureHandle, deviceHandle, depthTextureInfo))
+	{
+		throw std::runtime_error("Failed to create GFX texture for depth!");
+	}
+
 	const auto vertShaderBinary = read_shader_file("model.vert.spv");
 	const auto fragShaderBinary = read_shader_file("model.frag.spv");
 	gfx::GraphicsPipelineInfo pipelineInfo{
@@ -185,6 +198,7 @@ int main()
 									} },
 		},
 		.constantBlock = { sizeof(glm::mat4), gfx::ShaderStageFlags_Vertex },
+		.depthTest = true,
 	};
 	gfx::PipelineHandle pipelineHandle{};
 	if (!gfx::create_graphics_pipeline(pipelineHandle, deviceHandle, pipelineInfo))
@@ -295,7 +309,7 @@ int main()
 
 		gfx::RenderPassInfo renderPassInfo{
 			.colorAttachments = { swapChainImageHandle },
-			.depthAttachment = {},
+			.depthAttachment = depthTextureHandle,
 			.clearColor = { 0.392f, 0.584f, 0.929f, 1.0f }, // Cornflower Blue
 		};
 		gfx::begin_render_pass(commandListHandle, renderPassInfo);

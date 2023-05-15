@@ -124,6 +124,14 @@ namespace sm::gfx
 				return vk::Format::eR8G8B8A8Unorm;
 			case Format::eRGBA32:
 				return vk::Format::eR32G32B32A32Sfloat;
+			case Format::eDepth16:
+				return vk::Format::eD16Unorm;
+			case Format::eDepth24Stencil8:
+				return vk::Format::eD24UnormS8Uint;
+			case Format::eDepth32:
+				return vk::Format::eD32Sfloat;
+			case Format::eDepth32Stencil8:
+				return vk::Format::eD32SfloatS8Uint;
 			default:
 				GFX_ASSERT(false, "Cannot convert unknown Format to vk::Format!");
 				break;
@@ -184,6 +192,40 @@ namespace sm::gfx
 				break; // These buffer types cannot be used in descriptors.
 			default:
 				GFX_ASSERT(false, "Cannot convert unknown BufferType to vk::DescriptorType!");
+				break;
+		}
+		return {};
+	}
+
+	auto convert_texture_type_to_vk_image_type(TextureType textureType) -> vk::ImageType
+	{
+		switch (textureType)
+		{
+			case TextureType::e1D:
+				return vk::ImageType::e1D;
+			case TextureType::e2D:
+				return vk::ImageType::e2D;
+			case TextureType::e3D:
+				return vk::ImageType::e3D;
+			default:
+				GFX_ASSERT(false, "Cannot convert unknown TextureType to vk::ImageType!");
+				break;
+		}
+		return {};
+	}
+
+	auto convert_texture_usage_to_vk_image_usage(TextureUsage textureUsage) -> vk::ImageUsageFlags
+	{
+		switch (textureUsage)
+		{
+			case TextureUsage::eTexture:
+				return vk::ImageUsageFlagBits::eSampled;
+			case TextureUsage::eColorAttachment:
+				return vk::ImageUsageFlagBits::eColorAttachment;
+			case TextureUsage::eDepthStencilAttachment:
+				return vk::ImageUsageFlagBits::eDepthStencilAttachment;
+			default:
+				GFX_ASSERT(false, "Cannot convert unknown TextureUsage to vk::ImageUsageFlags!");
 				break;
 		}
 		return {};
@@ -1226,7 +1268,7 @@ namespace sm::gfx
 			0,
 			graphicsPipelineInfo.constantBlock.size
 		};
-		m_pipelineMap[pipelineHandle.resourceHandle] = std::make_unique<GraphicsPipeline>(m_device.get(), graphicsPipelineInfo.vertexCode, graphicsPipelineInfo.fragmentCode, graphicsPipelineInfo.vertexAttributes, setLayouts, constantRange);
+		m_pipelineMap[pipelineHandle.resourceHandle] = std::make_unique<GraphicsPipeline>(m_device.get(), graphicsPipelineInfo, setLayouts, constantRange);
 		m_nextPipelineId += 1;
 
 		outPipelineHandle = pipelineHandle;
@@ -1536,7 +1578,7 @@ namespace sm::gfx
 		vk::RenderingAttachmentInfo depthAttachment{};
 		if (depthAttachmentTexture != nullptr)
 		{
-			depthAttachment.setImageView({});									// #TODO: Image views
+			depthAttachment.setImageView(depthAttachmentTexture->get_view());
 			depthAttachment.setImageLayout(vk::ImageLayout::eAttachmentOptimal);
 			depthAttachment.setLoadOp(vk::AttachmentLoadOp::eClear);			// #TODO: Optional.
 			depthAttachment.setStoreOp(vk::AttachmentStoreOp::eDontCare);
@@ -1782,6 +1824,10 @@ namespace sm::gfx
 		: m_device(&device)
 	{
 		m_extent = vk::Extent3D(textureInfo.width, textureInfo.height, 1);
+		m_mipLevels = textureInfo.mipLevels;
+		m_format = convert_format_to_vk_format(textureInfo.format);
+		m_usageFlags = convert_texture_usage_to_vk_image_usage(textureInfo.usage);
+		m_type = convert_texture_type_to_vk_image_type(textureInfo.type);
 
 		vk::ImageCreateInfo image_info{};
 		image_info.setExtent(m_extent);
@@ -1794,8 +1840,8 @@ namespace sm::gfx
 		image_info.setSamples(vk::SampleCountFlagBits::e1); // #TODO: Optional.
 
 		vma::AllocationCreateInfo alloc_info{};
-		alloc_info.setUsage(vma::MemoryUsage::eAutoPreferDevice);						// #TODO: Make optional.
-		alloc_info.setFlags(vma::AllocationCreateFlagBits::eHostAccessSequentialWrite); // #TODO: Optional.
+		alloc_info.setUsage(vma::MemoryUsage::eAutoPreferHost); // #TODO: Make optional.
+		//		alloc_info.setFlags(vma::AllocationCreateFlagBits::eHostAccessSequentialWrite); // #TODO: Optional.
 
 		auto allocator = m_device->get_allocator();
 		std::tie(m_image, m_allocation) = allocator.createImage(image_info, alloc_info);
@@ -1804,7 +1850,14 @@ namespace sm::gfx
 		view_info.setImage(m_image);
 		view_info.setFormat(m_format);
 		view_info.setViewType(vk::ImageViewType::e2D);
-		view_info.subresourceRange.setAspectMask(vk::ImageAspectFlagBits::eColor);
+		if (textureInfo.usage == TextureUsage::eDepthStencilAttachment)
+		{
+			view_info.subresourceRange.setAspectMask(vk::ImageAspectFlagBits::eDepth);
+		}
+		else
+		{
+			view_info.subresourceRange.setAspectMask(vk::ImageAspectFlagBits::eColor);
+		}
 		view_info.subresourceRange.setBaseMipLevel(0);
 		view_info.subresourceRange.setLevelCount(1);
 		view_info.subresourceRange.setBaseArrayLayer(0);
@@ -1910,7 +1963,7 @@ namespace sm::gfx
 		m_pipeline = device.createComputePipelineUnique({}, vk_pipeline_info).value;
 	}
 
-	GraphicsPipeline::GraphicsPipeline(vk::Device device, const std::vector<char>& vertexCode, const std::vector<char>& fragmentCode, const std::vector<VertexAttribute>& vertexAttributes, const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts, vk::PushConstantRange constantRange)
+	GraphicsPipeline::GraphicsPipeline(vk::Device device, const GraphicsPipelineInfo& graphicsPipelineInfo, const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts, vk::PushConstantRange constantRange)
 		: Pipeline(PipelineType::eGraphics, descriptorSetLayouts)
 	{
 		vk::PipelineLayoutCreateInfo pipeline_layout_info{};
@@ -1922,8 +1975,8 @@ namespace sm::gfx
 		m_layout = device.createPipelineLayoutUnique(pipeline_layout_info);
 
 		vk::ShaderModuleCreateInfo vertex_module_info{};
-		vertex_module_info.setCodeSize(vertexCode.size());
-		vertex_module_info.setPCode(reinterpret_cast<const std::uint32_t*>(vertexCode.data()));
+		vertex_module_info.setCodeSize(graphicsPipelineInfo.vertexCode.size());
+		vertex_module_info.setPCode(reinterpret_cast<const std::uint32_t*>(graphicsPipelineInfo.vertexCode.data()));
 		auto vertex_module = device.createShaderModuleUnique(vertex_module_info);
 		vk::PipelineShaderStageCreateInfo vertex_stage_info{};
 		vertex_stage_info.setStage(vk::ShaderStageFlagBits::eVertex);
@@ -1931,8 +1984,8 @@ namespace sm::gfx
 		vertex_stage_info.setPName("vs_main");
 
 		vk::ShaderModuleCreateInfo fragment_module_info{};
-		fragment_module_info.setCodeSize(fragmentCode.size());
-		fragment_module_info.setPCode(reinterpret_cast<const std::uint32_t*>(fragmentCode.data()));
+		fragment_module_info.setCodeSize(graphicsPipelineInfo.fragmentCode.size());
+		fragment_module_info.setPCode(reinterpret_cast<const std::uint32_t*>(graphicsPipelineInfo.fragmentCode.data()));
 		auto fragment_module = device.createShaderModuleUnique(fragment_module_info);
 		vk::PipelineShaderStageCreateInfo fragment_stage_info{};
 		fragment_stage_info.setStage(vk::ShaderStageFlagBits::eFragment);
@@ -1942,10 +1995,10 @@ namespace sm::gfx
 		const std::vector stages = { vertex_stage_info, fragment_stage_info };
 
 		std::uint32_t stride{};
-		std::vector<vk::VertexInputAttributeDescription> vk_attributes(vertexAttributes.size());
+		std::vector<vk::VertexInputAttributeDescription> vk_attributes(graphicsPipelineInfo.vertexAttributes.size());
 		for (auto i = 0; i < vk_attributes.size(); ++i)
 		{
-			const auto& attribute = vertexAttributes.at(i);
+			const auto& attribute = graphicsPipelineInfo.vertexAttributes.at(i);
 			auto& vk_attribute = vk_attributes.at(i);
 			vk_attribute.setBinding(0);
 			vk_attribute.setLocation(i);
@@ -1961,7 +2014,7 @@ namespace sm::gfx
 		vk_binding.setStride(stride);
 
 		vk::PipelineVertexInputStateCreateInfo vertex_input_state{};
-		if (!vertexAttributes.empty())
+		if (!graphicsPipelineInfo.vertexAttributes.empty())
 		{
 			vertex_input_state.setVertexAttributeDescriptions(vk_attributes);
 			vertex_input_state.setVertexBindingDescriptions(vk_binding);
@@ -1984,9 +2037,10 @@ namespace sm::gfx
 		multisample_state.setRasterizationSamples(vk::SampleCountFlagBits::e1); // #TODO: Optional.
 
 		vk::PipelineDepthStencilStateCreateInfo depth_stencil_state{};
-		depth_stencil_state.setDepthTestEnable(false);	 // #TODO: Optional.
-		depth_stencil_state.setDepthWriteEnable(false);	 // #TODO: Optional.
-		depth_stencil_state.setStencilTestEnable(false); // #TODO: Optional.
+		depth_stencil_state.setDepthTestEnable(graphicsPipelineInfo.depthTest);	 // #TODO: Optional.
+		depth_stencil_state.setDepthWriteEnable(graphicsPipelineInfo.depthTest); // #TODO: Optional.
+		depth_stencil_state.setStencilTestEnable(false);						 // #TODO: Optional.
+		depth_stencil_state.setDepthCompareOp(vk::CompareOp::eLessOrEqual);
 
 		std::vector<vk::PipelineColorBlendAttachmentState> colorBlendAttachments{
 			vk::PipelineColorBlendAttachmentState(
@@ -2012,7 +2066,10 @@ namespace sm::gfx
 		std::vector<vk::Format> colorAttachmentFormats{ vk::Format::eB8G8R8A8Srgb }; // #TODO: Optional.
 		vk::PipelineRenderingCreateInfo rendering_info{};
 		rendering_info.setColorAttachmentFormats(colorAttachmentFormats);
-		rendering_info.setDepthAttachmentFormat({}); // #TODO: Optional.
+		if (graphicsPipelineInfo.depthTest)
+		{
+			rendering_info.setDepthAttachmentFormat(vk::Format::eD16Unorm); // #TODO: Optional.
+		}
 
 		vk::GraphicsPipelineCreateInfo vk_pipeline_info{};
 		vk_pipeline_info.setStages(stages);

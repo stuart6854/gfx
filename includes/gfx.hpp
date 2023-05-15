@@ -126,6 +126,10 @@ namespace sm::gfx
 		eRGB32,
 		eRGBA8,
 		eRGBA32,
+		eDepth16,
+		eDepth24Stencil8,
+		eDepth32,
+		eDepth32Stencil8,
 	};
 
 	void wait_on_fence(FenceHandle fenceHandle);
@@ -184,6 +188,8 @@ namespace sm::gfx
 		std::vector<char> fragmentCode;
 		std::vector<DescriptorSetInfo> descriptorSets;
 		PipelineConstantBlock constantBlock;
+
+		bool depthTest;
 	};
 	bool create_graphics_pipeline(PipelineHandle& outPipelineHandle, DeviceHandle deviceHandle, const GraphicsPipelineInfo& graphicsPipelineInfo);
 	void destroy_pipeline(PipelineHandle pipelineHandle);
@@ -214,8 +220,15 @@ namespace sm::gfx
 		e2D,
 		e3D,
 	};
+	enum class TextureUsage
+	{
+		eTexture,
+		eColorAttachment,
+		eDepthStencilAttachment,
+	};
 	struct TextureInfo
 	{
+		TextureUsage usage{};
 		TextureType type{};
 		std::uint32_t width{};
 		std::uint32_t height{};
