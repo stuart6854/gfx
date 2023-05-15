@@ -267,7 +267,7 @@ namespace sm::gfx
 	{
 	public:
 		GraphicsPipeline() = default;
-		GraphicsPipeline(vk::Device device, const std::vector<char>& vertexCode, const std::vector<char>& fragmentCode, const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts, vk::PushConstantRange constantRange);
+		GraphicsPipeline(vk::Device device, const std::vector<char>& vertexCode, const std::vector<char>& fragmentCode, const std::vector<VertexAttribute>& vertexAttributes, const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts, vk::PushConstantRange constantRange);
 		~GraphicsPipeline() override = default;
 
 	private:

@@ -110,6 +110,48 @@ namespace sm::gfx
 		return stageFlags;
 	}
 
+	auto convert_format_to_vk_format(Format format) -> vk::Format
+	{
+		switch (format)
+		{
+			case Format::eUndefined:
+				return vk::Format::eUndefined;
+			case Format::eRGB8:
+				return vk::Format::eR8G8B8Unorm;
+			case Format::eRGB32:
+				return vk::Format::eR32G32B32Sfloat;
+			case Format::eRGBA8:
+				return vk::Format::eR8G8B8A8Unorm;
+			case Format::eRGBA32:
+				return vk::Format::eR32G32B32A32Sfloat;
+			default:
+				GFX_ASSERT(false, "Cannot convert unknown Format to vk::Format!");
+				break;
+		}
+		return vk::Format::eUndefined;
+	}
+
+	auto convert_format_to_byte_size(Format format) -> std::uint32_t
+	{
+		switch (format)
+		{
+			case Format::eUndefined:
+				return 0;
+			case Format::eRGB8:
+				return 1 * 3;
+			case Format::eRGBA8:
+				return 1 * 4;
+			case Format::eRGB32:
+				return 4 * 3;
+			case Format::eRGBA32:
+				return 4 * 4;
+			default:
+				GFX_ASSERT(false, "Cannot convert unknown Format to byte size!");
+				break;
+		}
+		return 0;
+	}
+
 	auto convert_buffer_type_to_vk_usage(BufferType bufferType) -> vk::BufferUsageFlags
 	{
 		switch (bufferType)
@@ -1184,7 +1226,7 @@ namespace sm::gfx
 			0,
 			graphicsPipelineInfo.constantBlock.size
 		};
-		m_pipelineMap[pipelineHandle.resourceHandle] = std::make_unique<GraphicsPipeline>(m_device.get(), graphicsPipelineInfo.vertexCode, graphicsPipelineInfo.fragmentCode, setLayouts, constantRange);
+		m_pipelineMap[pipelineHandle.resourceHandle] = std::make_unique<GraphicsPipeline>(m_device.get(), graphicsPipelineInfo.vertexCode, graphicsPipelineInfo.fragmentCode, graphicsPipelineInfo.vertexAttributes, setLayouts, constantRange);
 		m_nextPipelineId += 1;
 
 		outPipelineHandle = pipelineHandle;
@@ -1868,7 +1910,7 @@ namespace sm::gfx
 		m_pipeline = device.createComputePipelineUnique({}, vk_pipeline_info).value;
 	}
 
-	GraphicsPipeline::GraphicsPipeline(vk::Device device, const std::vector<char>& vertexCode, const std::vector<char>& fragmentCode, const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts, vk::PushConstantRange constantRange)
+	GraphicsPipeline::GraphicsPipeline(vk::Device device, const std::vector<char>& vertexCode, const std::vector<char>& fragmentCode, const std::vector<VertexAttribute>& vertexAttributes, const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts, vk::PushConstantRange constantRange)
 		: Pipeline(PipelineType::eGraphics, descriptorSetLayouts)
 	{
 		vk::PipelineLayoutCreateInfo pipeline_layout_info{};
@@ -1899,7 +1941,30 @@ namespace sm::gfx
 
 		const std::vector stages = { vertex_stage_info, fragment_stage_info };
 
+		std::uint32_t stride{};
+		std::vector<vk::VertexInputAttributeDescription> vk_attributes(vertexAttributes.size());
+		for (auto i = 0; i < vk_attributes.size(); ++i)
+		{
+			const auto& attribute = vertexAttributes.at(i);
+			auto& vk_attribute = vk_attributes.at(i);
+			vk_attribute.setBinding(i);
+			vk_attribute.setFormat(convert_format_to_vk_format(attribute.format));
+			vk_attribute.setOffset(stride);
+
+			stride += convert_format_to_byte_size(attribute.format);
+		}
+
+		vk::VertexInputBindingDescription vk_binding{};
+		vk_binding.setBinding(0);
+		vk_binding.setInputRate(vk::VertexInputRate::eVertex);
+		vk_binding.setStride(stride);
+
 		vk::PipelineVertexInputStateCreateInfo vertex_input_state{};
+		if (!vertexAttributes.empty())
+		{
+			vertex_input_state.setVertexAttributeDescriptions(vk_attributes);
+			vertex_input_state.setVertexBindingDescriptions(vk_binding);
+		}
 
 		vk::PipelineInputAssemblyStateCreateInfo input_assembly_state{};
 		input_assembly_state.setTopology(vk::PrimitiveTopology::eTriangleList);

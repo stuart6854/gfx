@@ -119,6 +119,15 @@ namespace sm::gfx
 
 #pragma region Device Resources
 
+	enum class Format
+	{
+		eUndefined,
+		eRGB8,
+		eRGB32,
+		eRGBA8,
+		eRGBA32,
+	};
+
 	void wait_on_fence(FenceHandle fenceHandle);
 
 	constexpr std::uint32_t CommandListFlags_FireAndForget = 1u << 0u; // Once a command list been submitted, it can no longer be reused, and it will be automatically freed (once safe to do so).
@@ -163,9 +172,15 @@ namespace sm::gfx
 		PipelineConstantBlock constantBlock;
 	};
 	bool create_compute_pipeline(PipelineHandle& outPipelineHandle, DeviceHandle deviceHandle, const ComputePipelineInfo& computePipelineInfo);
+	struct VertexAttribute
+	{
+		std::string name;
+		Format format;
+	};
 	struct GraphicsPipelineInfo
 	{
 		std::vector<char> vertexCode;
+		std::vector<VertexAttribute> vertexAttributes;
 		std::vector<char> fragmentCode;
 		std::vector<DescriptorSetInfo> descriptorSets;
 		PipelineConstantBlock constantBlock;
@@ -193,11 +208,6 @@ namespace sm::gfx
 	bool map_buffer(BufferHandle bufferHandle, void*& outBufferPtr);
 	void unmap_buffer(BufferHandle bufferHandle);
 
-	enum class Format
-	{
-		eUndefined,
-		eRGBA8,
-	};
 	enum class TextureType
 	{
 		e1D,
