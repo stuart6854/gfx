@@ -1393,7 +1393,7 @@ namespace sm::gfx
 			return;
 		}
 
-		vk::Viewport viewport{ x, y, width, height, minDepth, maxDepth };
+		vk::Viewport viewport{ x, y + height, width, -height, minDepth, maxDepth };
 		m_commandBuffer->setViewport(0, viewport);
 	}
 
