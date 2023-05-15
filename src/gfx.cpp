@@ -1769,7 +1769,7 @@ namespace sm::gfx
 		vk::PipelineDynamicStateCreateInfo dynamic_state{};
 		dynamic_state.setDynamicStates(dynamicStates);
 
-		std::vector<vk::Format> colorAttachmentFormats{ vk::Format::eR8G8B8A8Srgb }; // #TODO: Optional.
+		std::vector<vk::Format> colorAttachmentFormats{ vk::Format::eB8G8R8A8Srgb }; // #TODO: Optional.
 		vk::PipelineRenderingCreateInfo rendering_info{};
 		rendering_info.setColorAttachmentFormats(colorAttachmentFormats);
 		rendering_info.setDepthAttachmentFormat({}); // #TODO: Optional.
