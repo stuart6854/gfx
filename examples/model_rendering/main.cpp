@@ -45,7 +45,9 @@ auto read_shader_file(const char* filename) -> std::vector<char>
 struct Vertex
 {
 	glm::vec3 pos;
+	glm::vec3 normal;
 };
+
 bool read_obj_model(const std::string& filename, std::vector<Vertex>& outVertices, std::vector<std::uint32_t>& outTriangles)
 {
 	tinyobj::ObjReaderConfig readerConfig{};
@@ -89,15 +91,15 @@ bool read_obj_model(const std::string& filename, std::vector<Vertex>& outVertice
 				vertex.pos.y = attrib.vertices[3 * idx.vertex_index + 1];
 				vertex.pos.z = attrib.vertices[3 * idx.vertex_index + 2];
 
-#if false
 				const bool hasNormals = idx.normal_index >= 0;
 				if (hasNormals)
 				{
-					const auto nx = attrib.normals[3 * idx.normal_index + 0];
-					const auto ny = attrib.normals[3 * idx.normal_index + 1];
-					const auto nz = attrib.normals[3 * idx.normal_index + 2];
+					vertex.normal.x = attrib.normals[3 * idx.normal_index + 0];
+					vertex.normal.y = attrib.normals[3 * idx.normal_index + 1];
+					vertex.normal.z = attrib.normals[3 * idx.normal_index + 2];
 				}
 
+#if false
 				const bool hasTexCoords = idx.texcoord_index >= 0;
 				if (hasTexCoords)
 				{
@@ -174,6 +176,7 @@ int main()
 		.vertexCode = vertShaderBinary,
 		.vertexAttributes = {
 			{ "Position", gfx::Format::eRGB32 },
+			{ "Normal", gfx::Format::eRGB32 },
 		},
 		.fragmentCode = fragShaderBinary,
 		.descriptorSets = {
