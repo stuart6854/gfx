@@ -114,6 +114,10 @@ namespace sm::gfx
 	{
 		switch (bufferType)
 		{
+			case BufferType::eVertex:
+				return vk::BufferUsageFlagBits::eVertexBuffer;
+			case BufferType::eIndex:
+				return vk::BufferUsageFlagBits::eIndexBuffer;
 			case BufferType::eUniform:
 				return vk::BufferUsageFlagBits::eUniformBuffer;
 			case BufferType::eStorage:
@@ -133,6 +137,9 @@ namespace sm::gfx
 				return vk::DescriptorType::eUniformBuffer;
 			case BufferType::eStorage:
 				return vk::DescriptorType::eStorageBuffer;
+			case BufferType::eVertex:
+			case BufferType::eIndex:
+				break; // These buffer types cannot be used in descriptors.
 			default:
 				GFX_ASSERT(false, "Cannot convert unknown BufferType to vk::DescriptorType!");
 				break;
@@ -642,6 +649,59 @@ namespace sm::gfx
 		}
 
 		commandList->dispatch(groupCountX, groupCountY, groupCountZ);
+	}
+
+	void bind_index_buffer(CommandListHandle commandListHandle, BufferHandle bufferHandle, IndexType indexType)
+	{
+		GFX_ASSERT(s_context && s_context->is_valid(), "GFX has not been initialised!");
+
+		Device* device{ nullptr };
+		if (!s_context->get_device(device, commandListHandle.deviceHandle))
+		{
+			return;
+		}
+		GFX_ASSERT(device != nullptr, "Device should not be null!");
+
+		CommandList* commandList{ nullptr };
+		if (!device->get_command_list(commandList, commandListHandle))
+		{
+			return;
+		}
+
+		Buffer* buffer{ nullptr };
+		if (!device->get_buffer(buffer, bufferHandle))
+		{
+			return;
+		}
+
+		auto vk_index_type = indexType == IndexType::eUInt16 ? vk::IndexType::eUint16 : vk::IndexType::eUint32;
+		commandList->bind_index_buffer(buffer, vk_index_type);
+	}
+
+	void bind_vertex_buffer(CommandListHandle commandListHandle, BufferHandle bufferHandle)
+	{
+		GFX_ASSERT(s_context && s_context->is_valid(), "GFX has not been initialised!");
+
+		Device* device{ nullptr };
+		if (!s_context->get_device(device, commandListHandle.deviceHandle))
+		{
+			return;
+		}
+		GFX_ASSERT(device != nullptr, "Device should not be null!");
+
+		CommandList* commandList{ nullptr };
+		if (!device->get_command_list(commandList, commandListHandle))
+		{
+			return;
+		}
+
+		Buffer* buffer{ nullptr };
+		if (!device->get_buffer(buffer, bufferHandle))
+		{
+			return;
+		}
+
+		commandList->bind_vertex_buffer(buffer);
 	}
 
 	void draw(CommandListHandle commandListHandle, std::uint32_t vertex_count, std::uint32_t instance_count, std::uint32_t first_vertex, std::uint32_t first_instance)
@@ -1224,6 +1284,18 @@ namespace sm::gfx
 	{
 	}
 
+	bool Device::get_buffer(Buffer*& outBuffer, BufferHandle bufferHandle)
+	{
+		if (!m_bufferMap.contains(bufferHandle.resourceHandle))
+		{
+			outBuffer = nullptr;
+			return false;
+		}
+
+		outBuffer = m_bufferMap.at(bufferHandle.resourceHandle).get();
+		return true;
+	}
+
 	bool Device::map_buffer(BufferHandle bufferHandle, void*& outBufferPtr)
 	{
 		if (!m_bufferMap.contains(bufferHandle.resourceHandle))
@@ -1526,6 +1598,26 @@ namespace sm::gfx
 		}
 
 		m_commandBuffer->dispatch(groupCountX, groupCountY, groupCountZ);
+	}
+
+	void CommandList::bind_index_buffer(Buffer* buffer, vk::IndexType indexType)
+	{
+		if (!m_hasBegun)
+		{
+			return;
+		}
+
+		m_commandBuffer->bindIndexBuffer(buffer->get_buffer(), 0, indexType);
+	}
+
+	void CommandList::bind_vertex_buffer(Buffer* buffer)
+	{
+		if (!m_hasBegun)
+		{
+			return;
+		}
+
+		m_commandBuffer->bindVertexBuffers(0, buffer->get_buffer(), { 0 });
 	}
 
 	void CommandList::draw(std::uint32_t vertex_count, std::uint32_t instance_count, std::uint32_t first_vertex, std::uint32_t first_instance)

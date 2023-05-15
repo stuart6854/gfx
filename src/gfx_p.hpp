@@ -102,6 +102,7 @@ namespace sm::gfx
 
 		bool create_buffer(BufferHandle& outBufferHandle, const BufferInfo& bufferInfo);
 		void destroy_buffer(BufferHandle bufferHandle);
+		bool get_buffer(Buffer*& outBuffer, BufferHandle bufferHandle);
 		bool map_buffer(BufferHandle bufferHandle, void*& outBufferPtr);
 		void unmap_buffer(BufferHandle bufferHandle);
 
@@ -186,6 +187,9 @@ namespace sm::gfx
 		void set_constants(vk::ShaderStageFlags shaderStages, std::uint32_t offset, std::uint32_t size, const void* data);
 
 		void dispatch(std::uint32_t groupCountX, std::uint32_t groupCountY, std::uint32_t groupCountZ);
+
+		void bind_index_buffer(Buffer* buffer, vk::IndexType indexType);
+		void bind_vertex_buffer(Buffer* buffer);
 
 		void draw(std::uint32_t vertex_count, std::uint32_t instance_count, std::uint32_t first_vertex, std::uint32_t first_instance);
 		void draw_indexed(std::uint32_t index_count, std::uint32_t instance_count, std::uint32_t first_index, std::int32_t vertex_offset, std::uint32_t first_instance);
