@@ -1947,7 +1947,8 @@ namespace sm::gfx
 		{
 			const auto& attribute = vertexAttributes.at(i);
 			auto& vk_attribute = vk_attributes.at(i);
-			vk_attribute.setBinding(i);
+			vk_attribute.setBinding(0);
+			vk_attribute.setLocation(i);
 			vk_attribute.setFormat(convert_format_to_vk_format(attribute.format));
 			vk_attribute.setOffset(stride);
 
