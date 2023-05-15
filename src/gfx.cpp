@@ -1085,11 +1085,11 @@ namespace sm::gfx
 		return true;
 	}
 
-	bool Device::create_texture(TextureHandle& outTextureHandle, vk::Image image)
+	bool Device::create_texture(TextureHandle& outTextureHandle, vk::Image image, vk::Extent3D extent, vk::Format format)
 	{
 		TextureHandle textureHandle(m_deviceHandle, ResourceHandle(m_nextTextureId));
 
-		m_textureMap[textureHandle.resourceHandle] = std::make_unique<Texture>(*this, image);
+		m_textureMap[textureHandle.resourceHandle] = std::make_unique<Texture>(*this, image, extent, format);
 		m_nextTextureId += 1;
 
 		outTextureHandle = textureHandle;
@@ -1434,8 +1434,8 @@ namespace sm::gfx
 		m_view = m_device->get_device().createImageViewUnique(view_info);
 	}
 
-	Texture::Texture(Device& device, vk::Image image)
-		: m_device(&device), m_image(image)
+	Texture::Texture(Device& device, vk::Image image, vk::Extent3D extent, vk::Format format)
+		: m_device(&device), m_image(image), m_extent(extent), m_format(format)
 	{
 		vk::ImageViewCreateInfo view_info{};
 		view_info.setImage(m_image);
@@ -1704,7 +1704,7 @@ namespace sm::gfx
 		m_imageHandles.resize(images.size());
 		for (auto i = 0; i < images.size(); ++i)
 		{
-			bool success = m_device->create_texture(m_imageHandles[i], images[i]);
+			bool success = m_device->create_texture(m_imageHandles[i], images[i], vk::Extent3D(m_extent, 1), surfaceFormat.format);
 			GFX_ASSERT(success, "Failed to create Texture from SwapChain image!");
 		}
 	}

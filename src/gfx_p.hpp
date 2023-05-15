@@ -106,7 +106,7 @@ namespace sm::gfx
 		void unmap_buffer(BufferHandle bufferHandle);
 
 		bool create_texture(TextureHandle& outTextureHandle, const TextureInfo& textureInfo);
-		bool create_texture(TextureHandle& outTextureHandle, vk::Image image);
+		bool create_texture(TextureHandle& outTextureHandle, vk::Image image, vk::Extent3D extent, vk::Format format);
 		void destroy_texture(TextureHandle textureHandle);
 		bool get_texture(Texture*& outTexture, TextureHandle textureHandle);
 
@@ -302,7 +302,7 @@ namespace sm::gfx
 	public:
 		Texture() = default;
 		explicit Texture(Device& device, const TextureInfo& textureInfo);
-		explicit Texture(Device& device, vk::Image image);
+		explicit Texture(Device& device, vk::Image image, vk::Extent3D extent, vk::Format format);
 		Texture(Texture&& other) noexcept;
 		~Texture();
 
