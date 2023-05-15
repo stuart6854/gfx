@@ -183,6 +183,7 @@ namespace sm::gfx
 
 		void bind_pipeline(Pipeline* pipeline);
 		void bind_descriptor_set(vk::DescriptorSet descriptorSet);
+		void set_constants(vk::ShaderStageFlags shaderStages, std::uint32_t offset, std::uint32_t size, const void* data);
 
 		void dispatch(std::uint32_t groupCountX, std::uint32_t groupCountY, std::uint32_t groupCountZ);
 
@@ -252,7 +253,7 @@ namespace sm::gfx
 	{
 	public:
 		ComputePipeline() = default;
-		ComputePipeline(vk::Device device, const std::vector<char>& shaderCode, const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts);
+		ComputePipeline(vk::Device device, const std::vector<char>& shaderCode, const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts, vk::PushConstantRange constantRange);
 		~ComputePipeline() override = default;
 
 	private:
@@ -262,7 +263,7 @@ namespace sm::gfx
 	{
 	public:
 		GraphicsPipeline() = default;
-		GraphicsPipeline(vk::Device device, const std::vector<char>& vertexCode, const std::vector<char>& fragmentCode, const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts);
+		GraphicsPipeline(vk::Device device, const std::vector<char>& vertexCode, const std::vector<char>& fragmentCode, const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts, vk::PushConstantRange constantRange);
 		~GraphicsPipeline() override = default;
 
 	private:

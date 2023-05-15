@@ -91,6 +91,55 @@ namespace sm::gfx
 		{ TextureState::ePresent, vk::AccessFlagBits2::eNone },
 	};
 
+	auto convert_shader_stages_to_vk_shader_stage_flags(std::uint32_t shaderStages) -> vk::ShaderStageFlags
+	{
+		vk::ShaderStageFlags stageFlags{};
+		if (shaderStages & ShaderStageFlags_Compute)
+		{
+			stageFlags |= vk::ShaderStageFlagBits::eCompute;
+		}
+		if (shaderStages & ShaderStageFlags_Vertex)
+		{
+			stageFlags |= vk::ShaderStageFlagBits::eVertex;
+		}
+		if (shaderStages & ShaderStageFlags_Fragment)
+		{
+			stageFlags |= vk::ShaderStageFlagBits::eFragment;
+		}
+		// #TODO: Convert other shader stages.
+		return stageFlags;
+	}
+
+	auto convert_buffer_type_to_vk_usage(BufferType bufferType) -> vk::BufferUsageFlags
+	{
+		switch (bufferType)
+		{
+			case BufferType::eUniform:
+				return vk::BufferUsageFlagBits::eUniformBuffer;
+			case BufferType::eStorage:
+				return vk::BufferUsageFlagBits::eStorageBuffer;
+			default:
+				GFX_ASSERT(false, "Cannot convert unknown BufferType to vk::BufferUsageFlags!");
+				break;
+		}
+		return {};
+	}
+
+	auto convert_buffer_type_to_descriptor_type(BufferType bufferType) -> vk::DescriptorType
+	{
+		switch (bufferType)
+		{
+			case BufferType::eUniform:
+				return vk::DescriptorType::eUniformBuffer;
+			case BufferType::eStorage:
+				return vk::DescriptorType::eStorageBuffer;
+			default:
+				GFX_ASSERT(false, "Cannot convert unknown BufferType to vk::DescriptorType!");
+				break;
+		}
+		return {};
+	}
+
 #pragma endregion
 
 #pragma region Device Resources
@@ -552,6 +601,27 @@ namespace sm::gfx
 		}
 
 		commandList->bind_descriptor_set(descriptorSet);
+	}
+
+	void set_constants(CommandListHandle commandListHandle, std::uint32_t shaderStages, std::uint32_t offset, std::uint32_t size, const void* data)
+	{
+		GFX_ASSERT(s_context && s_context->is_valid(), "GFX has not been initialised!");
+
+		Device* device{ nullptr };
+		if (!s_context->get_device(device, commandListHandle.deviceHandle))
+		{
+			return;
+		}
+		GFX_ASSERT(device != nullptr, "Device should not be null!");
+
+		CommandList* commandList{ nullptr };
+		if (!device->get_command_list(commandList, commandListHandle))
+		{
+			return;
+		}
+
+		auto vk_shader_stages = convert_shader_stages_to_vk_shader_stage_flags(shaderStages);
+		commandList->set_constants(vk_shader_stages, offset, size, data);
 	}
 
 	void dispatch(CommandListHandle commandListHandle, std::uint32_t groupCountX, std::uint32_t groupCountY, std::uint32_t groupCountZ)
@@ -1023,7 +1093,12 @@ namespace sm::gfx
 			}
 		}
 
-		m_pipelineMap[pipelineHandle.resourceHandle] = std::make_unique<ComputePipeline>(m_device.get(), computePipelineInfo.shaderCode, setLayouts);
+		vk::PushConstantRange constantRange{
+			convert_shader_stages_to_vk_shader_stage_flags(computePipelineInfo.constantBlock.shaderStages),
+			0,
+			computePipelineInfo.constantBlock.size
+		};
+		m_pipelineMap[pipelineHandle.resourceHandle] = std::make_unique<ComputePipeline>(m_device.get(), computePipelineInfo.shaderCode, setLayouts, constantRange);
 		m_nextPipelineId += 1;
 
 		outPipelineHandle = pipelineHandle;
@@ -1044,7 +1119,12 @@ namespace sm::gfx
 			}
 		}
 
-		m_pipelineMap[pipelineHandle.resourceHandle] = std::make_unique<GraphicsPipeline>(m_device.get(), graphicsPipelineInfo.vertexCode, graphicsPipelineInfo.fragmentCode, setLayouts);
+		vk::PushConstantRange constantRange{
+			convert_shader_stages_to_vk_shader_stage_flags(graphicsPipelineInfo.constantBlock.shaderStages),
+			0,
+			graphicsPipelineInfo.constantBlock.size
+		};
+		m_pipelineMap[pipelineHandle.resourceHandle] = std::make_unique<GraphicsPipeline>(m_device.get(), graphicsPipelineInfo.vertexCode, graphicsPipelineInfo.fragmentCode, setLayouts, constantRange);
 		m_nextPipelineId += 1;
 
 		outPipelineHandle = pipelineHandle;
@@ -1259,19 +1339,7 @@ namespace sm::gfx
 
 		outBinding.setDescriptorCount(descriptorBindingInfo.count);
 
-		vk::ShaderStageFlags stageFlags{};
-		if (descriptorBindingInfo.shaderStages & ShaderStageFlags_Compute)
-		{
-			stageFlags |= vk::ShaderStageFlagBits::eCompute;
-		}
-		if (descriptorBindingInfo.shaderStages & ShaderStageFlags_Vertex)
-		{
-			stageFlags |= vk::ShaderStageFlagBits::eVertex;
-		}
-		if (descriptorBindingInfo.shaderStages & ShaderStageFlags_Fragment)
-		{
-			stageFlags |= vk::ShaderStageFlagBits::eFragment;
-		}
+		auto stageFlags = convert_shader_stages_to_vk_shader_stage_flags(descriptorBindingInfo.shaderStages);
 		outBinding.setStageFlags(stageFlags);
 
 		return outBinding;
@@ -1439,6 +1507,17 @@ namespace sm::gfx
 		m_commandBuffer->bindDescriptorSets(bindPoint, pipelineLayout, 0, { descriptorSet }, {});
 	}
 
+	void CommandList::set_constants(vk::ShaderStageFlags shaderStages, std::uint32_t offset, std::uint32_t size, const void* data)
+	{
+		if (!m_hasBegun)
+		{
+			return;
+		}
+
+		const auto pipelineLayout = m_boundPipeline->get_pipeline_layout();
+		m_commandBuffer->pushConstants(pipelineLayout, shaderStages, offset, size, data);
+	}
+
 	void CommandList::dispatch(std::uint32_t groupCountX, std::uint32_t groupCountY, std::uint32_t groupCountZ)
 	{
 		if (!m_hasBegun)
@@ -1526,7 +1605,7 @@ namespace sm::gfx
 		: m_device(device), m_allocator(allocator)
 	{
 		vk::BufferCreateInfo vk_buffer_info{};
-		vk_buffer_info.setUsage(vk::BufferUsageFlagBits::eStorageBuffer); // #TODO: Make optional.
+		vk_buffer_info.setUsage(convert_buffer_type_to_vk_usage(bufferInfo.type));
 		vk_buffer_info.setSize(bufferInfo.size);
 		vk_buffer_info.setSharingMode(vk::SharingMode::eExclusive);
 		//		vk_buffer_info.setQueueFamilyIndices(); // #TODO: Add later?
@@ -1537,12 +1616,7 @@ namespace sm::gfx
 
 		std::tie(m_buffer, m_allocation) = m_allocator.createBufferUnique(vk_buffer_info, alloc_info);
 
-		switch (bufferInfo.type)
-		{
-			case BufferType::eStorage:
-				m_descriptorType = vk::DescriptorType::eStorageBuffer;
-				break;
-		}
+		m_descriptorType = convert_buffer_type_to_descriptor_type(bufferInfo.type);
 
 		m_descriptorInfo.setBuffer(m_buffer.get());
 		m_descriptorInfo.setOffset(0);
@@ -1674,11 +1748,15 @@ namespace sm::gfx
 		return *this;
 	}
 
-	ComputePipeline::ComputePipeline(vk::Device device, const std::vector<char>& shaderCode, const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts)
+	ComputePipeline::ComputePipeline(vk::Device device, const std::vector<char>& shaderCode, const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts, vk::PushConstantRange constantRange)
 		: Pipeline(PipelineType::eCompute, descriptorSetLayouts)
 	{
 		vk::PipelineLayoutCreateInfo pipeline_layout_info{};
 		pipeline_layout_info.setSetLayouts(get_set_layouts());
+		if (constantRange.size > 0 && constantRange.stageFlags != vk::ShaderStageFlags())
+		{
+			pipeline_layout_info.setPushConstantRanges(constantRange);
+		}
 		m_layout = device.createPipelineLayoutUnique(pipeline_layout_info);
 
 		vk::ShaderModuleCreateInfo module_info{};
@@ -1698,11 +1776,15 @@ namespace sm::gfx
 		m_pipeline = device.createComputePipelineUnique({}, vk_pipeline_info).value;
 	}
 
-	GraphicsPipeline::GraphicsPipeline(vk::Device device, const std::vector<char>& vertexCode, const std::vector<char>& fragmentCode, const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts)
+	GraphicsPipeline::GraphicsPipeline(vk::Device device, const std::vector<char>& vertexCode, const std::vector<char>& fragmentCode, const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts, vk::PushConstantRange constantRange)
 		: Pipeline(PipelineType::eGraphics, descriptorSetLayouts)
 	{
 		vk::PipelineLayoutCreateInfo pipeline_layout_info{};
 		pipeline_layout_info.setSetLayouts(get_set_layouts());
+		if (constantRange.size > 0 && constantRange.stageFlags != vk::ShaderStageFlags())
+		{
+			pipeline_layout_info.setPushConstantRanges(constantRange);
+		}
 		m_layout = device.createPipelineLayoutUnique(pipeline_layout_info);
 
 		vk::ShaderModuleCreateInfo vertex_module_info{};

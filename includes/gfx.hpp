@@ -151,10 +151,16 @@ namespace sm::gfx
 	{
 		std::vector<DescriptorBindingInfo> bindings{};
 	};
+	struct PipelineConstantBlock
+	{
+		std::uint32_t size;
+		std::uint32_t shaderStages;
+	};
 	struct ComputePipelineInfo
 	{
 		std::vector<char> shaderCode;
 		std::vector<DescriptorSetInfo> descriptorSets;
+		PipelineConstantBlock constantBlock;
 	};
 	bool create_compute_pipeline(PipelineHandle& outPipelineHandle, DeviceHandle deviceHandle, const ComputePipelineInfo& computePipelineInfo);
 	struct GraphicsPipelineInfo
@@ -162,6 +168,7 @@ namespace sm::gfx
 		std::vector<char> vertexCode;
 		std::vector<char> fragmentCode;
 		std::vector<DescriptorSetInfo> descriptorSets;
+		PipelineConstantBlock constantBlock;
 	};
 	bool create_graphics_pipeline(PipelineHandle& outPipelineHandle, DeviceHandle deviceHandle, const GraphicsPipelineInfo& graphicsPipelineInfo);
 	void destroy_pipeline(PipelineHandle pipelineHandle);
@@ -171,6 +178,7 @@ namespace sm::gfx
 
 	enum class BufferType
 	{
+		eUniform,
 		eStorage,
 	};
 	struct BufferInfo
@@ -239,6 +247,7 @@ namespace sm::gfx
 
 	void bind_pipeline(CommandListHandle commandListHandle, PipelineHandle pipelineHandle);
 	void bind_descriptor_set(CommandListHandle commandListHandle, DescriptorSetHandle descriptorSetHandle);
+	void set_constants(CommandListHandle commandListHandle, std::uint32_t shaderStages, std::uint32_t offset, std::uint32_t size, const void* data);
 
 	void dispatch(CommandListHandle commandListHandle, std::uint32_t groupCountX, std::uint32_t groupCountY, std::uint32_t groupCountZ);
 
