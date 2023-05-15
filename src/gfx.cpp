@@ -1421,11 +1421,32 @@ namespace sm::gfx
 
 		auto allocator = m_device->get_allocator();
 		std::tie(m_image, m_allocation) = allocator.createImage(image_info, alloc_info);
+
+		vk::ImageViewCreateInfo view_info{};
+		view_info.setImage(m_image);
+		view_info.setFormat(m_format);
+		view_info.setViewType(vk::ImageViewType::e2D);
+		view_info.subresourceRange.setAspectMask(vk::ImageAspectFlagBits::eColor);
+		view_info.subresourceRange.setBaseMipLevel(0);
+		view_info.subresourceRange.setLevelCount(1);
+		view_info.subresourceRange.setBaseArrayLayer(0);
+		view_info.subresourceRange.setLayerCount(1);
+		m_view = m_device->get_device().createImageViewUnique(view_info);
 	}
 
 	Texture::Texture(Device& device, vk::Image image)
 		: m_device(&device), m_image(image)
 	{
+		vk::ImageViewCreateInfo view_info{};
+		view_info.setImage(m_image);
+		view_info.setFormat(m_format);
+		view_info.setViewType(vk::ImageViewType::e2D);
+		view_info.subresourceRange.setAspectMask(vk::ImageAspectFlagBits::eColor);
+		view_info.subresourceRange.setBaseMipLevel(0);
+		view_info.subresourceRange.setLevelCount(1);
+		view_info.subresourceRange.setBaseArrayLayer(0);
+		view_info.subresourceRange.setLayerCount(1);
+		m_view = m_device->get_device().createImageViewUnique(view_info);
 	}
 
 	Texture::Texture(Texture&& other) noexcept

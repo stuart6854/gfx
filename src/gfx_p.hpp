@@ -296,6 +296,7 @@ namespace sm::gfx
 		vk::DescriptorBufferInfo m_descriptorInfo;
 	};
 
+	// #TODO: Proper view system.
 	class Texture
 	{
 	public:
@@ -317,6 +318,8 @@ namespace sm::gfx
 
 		auto get_layout() const -> vk::ImageLayout { return m_layout; }
 
+		auto get_view() const -> vk::ImageView { return m_view.get(); }
+
 		/* Operators */
 
 		auto operator=(Texture&& rhs) noexcept -> Texture&;
@@ -334,6 +337,8 @@ namespace sm::gfx
 		vk::ImageType m_type;
 
 		vk::ImageLayout m_layout;
+
+		vk::UniqueImageView m_view;
 	};
 
 	class SwapChain
