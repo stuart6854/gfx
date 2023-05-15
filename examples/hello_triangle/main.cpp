@@ -35,12 +35,13 @@ auto read_shader_file(const char* filename) -> std::vector<char>
 
 int main()
 {
-	constexpr std::uint32_t WINDOW_WIDTH = 1080;
-	constexpr std::uint32_t WINDOW_HEIGHT = 720;
+	constexpr std::uint32_t WINDOW_WIDTH = 640;
+	constexpr std::uint32_t WINDOW_HEIGHT = 480;
 
 	glfwInit();
 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 	auto* window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Hello Triangle", nullptr, nullptr);
 
 	gfx::set_error_callback([](const char* msg) {
