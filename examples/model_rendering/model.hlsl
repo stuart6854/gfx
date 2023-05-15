@@ -6,9 +6,9 @@ struct VSIn
 
 struct VSOut
 {
-    float4 position : SV_POSITION;
-    float3 positionWorld : TEXCOORD1;
-    float3 normal : NORMAL;
+    float4 pos : SV_POSITION;
+    float3 worldPos : POSITION;
+    float3 worldNormal : NORMAL;
     float4 color : COLOR;
 };
 
@@ -30,13 +30,20 @@ struct PushConstants
 
 VSOut vs_main(VSIn input)
 {
-    float4x4 viewProj = mul(ubo.projMat, ubo.viewMat);
-    float4x4 modelViewProj = mul(viewProj, constants.modelMat);
+    float4 worldPos = float4(input.position, 1.0);
+    worldPos = mul(constants.modelMat, worldPos);
+    
+    float4 pos = mul(ubo.viewMat, worldPos);
+    pos = mul(ubo.projMat, pos);
+
+    float4 tempNormal = float4(input.normal, 0.0);
+    tempNormal = mul(constants.modelMat, tempNormal);
+    tempNormal = normalize(tempNormal);
 
     VSOut output;
-    output.position = mul(modelViewProj, float4(input.position, 1.0));
-    output.positionWorld = mul(constants.modelMat, float4(input.position, 1.0)).xyz;
-    output.normal = input.normal;
+    output.pos = pos;
+    output.worldPos = worldPos.xyz;
+    output.worldNormal = tempNormal.xyz;
     output.color = float4(1.0, 1.0, 1.0, 1.0);
     return output;
 }
@@ -48,8 +55,8 @@ float4 ps_main(VSOut input) : SV_TARGET
 {
     float3 objectColor = float3(1.0, 1.0, 1.0);
 
-    float3 norm = normalize(input.normal);
-    float3 lightDir = normalize(LIGHT_POS - input.positionWorld);
+    float3 norm = normalize(input.worldNormal);
+    float3 lightDir = normalize(LIGHT_POS - input.worldPos);
 
     float ambientStrength = 0.1;
     float3 ambientLight = ambientStrength * LIGHT_COLOR;
