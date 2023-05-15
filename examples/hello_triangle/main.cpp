@@ -117,15 +117,15 @@ int main()
 		gfx::RenderPassInfo renderPassInfo{
 			.colorAttachments = { swapChainImageHandle },
 			.depthAttachment = {},
-			.clearColor = { 1.0f, 0.3f, 0.3f, 1.0f },
+			.clearColor = { 0.392f, 0.584f, 0.929f, 1.0f }, // Cornflower Blue
 		};
 		gfx::begin_render_pass(commandListHandle, renderPassInfo);
 		{
 			gfx::set_viewport(commandListHandle, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 			gfx::set_scissor(commandListHandle, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
-			
+
 			gfx::bind_pipeline(commandListHandle, pipelineHandle);
-			// #TODO: Draw
+			gfx::draw(commandListHandle, 3, 1, 0, 0);
 		}
 		gfx::end_render_pass(commandListHandle);
 
@@ -141,7 +141,7 @@ int main()
 		gfx::submit_command_list(submitInfo, &fenceHandle, nullptr);
 
 		gfx::wait_on_fence(fenceHandle);
-		
+
 		gfx::present_swap_chain(swapChainHandle, 0, nullptr);
 	}
 
