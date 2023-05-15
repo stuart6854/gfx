@@ -13,6 +13,11 @@
 #endif
 #include <GLFW/glfw3native.h>
 
+#include <glm/ext/matrix_float4x4.hpp>
+#include <glm/ext/matrix_transform.hpp>
+#include <glm/ext/matrix_clip_space.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 #include <iostream>
 #include <fstream>
 
@@ -33,10 +38,17 @@ auto read_shader_file(const char* filename) -> std::vector<char>
 	return {};
 }
 
+struct UniformData
+{
+	glm::mat4 projMat;
+	glm::mat4 viewMat;
+};
+
 int main()
 {
 	constexpr std::uint32_t WINDOW_WIDTH = 640;
 	constexpr std::uint32_t WINDOW_HEIGHT = 480;
+	constexpr float WINDOW_ASPECT_RATIO = static_cast<float>(WINDOW_WIDTH) / static_cast<float>(WINDOW_HEIGHT);
 
 	glfwInit();
 
@@ -81,12 +93,17 @@ int main()
 		throw std::runtime_error("Failed to create GFX swap chain!");
 	}
 
-	const auto vertShaderBinary = read_shader_file("triangle.vert.spv");
-	const auto fragShaderBinary = read_shader_file("triangle.frag.spv");
+	const auto vertShaderBinary = read_shader_file("uniforms.vert.spv");
+	const auto fragShaderBinary = read_shader_file("uniforms.frag.spv");
 	gfx::GraphicsPipelineInfo pipelineInfo{
 		.vertexCode = vertShaderBinary,
 		.fragmentCode = fragShaderBinary,
-		.descriptorSets = {},
+		.descriptorSets = {
+			gfx::DescriptorSetInfo{ .bindings = {
+										{ gfx::DescriptorType::eUniformBuffer, 1, gfx::ShaderStageFlags_Vertex },
+									} },
+		},
+		.constantBlock = { sizeof(glm::mat4), gfx::ShaderStageFlags_Vertex },
 	};
 	gfx::PipelineHandle pipelineHandle{};
 	if (!gfx::create_graphics_pipeline(pipelineHandle, deviceHandle, pipelineInfo))
@@ -94,15 +111,51 @@ int main()
 		throw std::runtime_error("Failed to create GFX graphics pipeline!");
 	}
 
+	gfx::BufferInfo uniformBufferInfo{
+		.type = gfx::BufferType::eUniform,
+		.size = sizeof(UniformData),
+	};
+	gfx::BufferHandle uniformBufferHandle{};
+	if (!gfx::create_buffer(uniformBufferHandle, deviceHandle, uniformBufferInfo))
+	{
+		throw std::runtime_error("Failed to create GFX uniform buffer!");
+	}
+
+	UniformData uniformData{
+		.projMat = glm::perspectiveLH(glm::radians(60.0f), WINDOW_ASPECT_RATIO, 0.1f, 100.0f),
+		.viewMat = glm::lookAtLH(glm::vec3(-1, 2, -2), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0)),
+	};
+	void* bufferPtr{ nullptr };
+	if (gfx::map_buffer(uniformBufferHandle, bufferPtr))
+	{
+		std::memcpy(bufferPtr, &uniformData, sizeof(UniformData));
+		gfx::unmap_buffer(uniformBufferHandle);
+	}
+
+	gfx::DescriptorSetHandle descriptorSetHandle{};
+	if (!gfx::create_descriptor_set_from_pipeline(descriptorSetHandle, pipelineHandle, 0))
+	{
+		throw std::runtime_error("Failed to create GFX descriptor set!");
+	}
+	gfx::bind_buffer_to_descriptor_set(descriptorSetHandle, 0, uniformBufferHandle);
+
 	gfx::CommandListHandle commandListHandle{};
 	if (!gfx::create_command_list(commandListHandle, deviceHandle, 0))
 	{
 		throw std::runtime_error("Failed to create GFX command list!");
 	}
 
+	double lastFrameTime = glfwGetTime();
+	glm::mat4 modelMat = glm::mat4(1.0f);
 	while (glfwWindowShouldClose(window) == 0)
 	{
+		auto time = glfwGetTime();
+		auto deltaTime = static_cast<float>(time - lastFrameTime);
+		lastFrameTime = time;
+
 		glfwPollEvents();
+
+		modelMat = glm::rotate(modelMat, glm::radians(45.0f) * deltaTime, glm::vec3(0, 1, 0));
 
 		gfx::reset(commandListHandle);
 		gfx::begin(commandListHandle);
@@ -126,6 +179,9 @@ int main()
 			gfx::set_scissor(commandListHandle, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 
 			gfx::bind_pipeline(commandListHandle, pipelineHandle);
+			gfx::bind_descriptor_set(commandListHandle, descriptorSetHandle);
+			gfx::set_constants(commandListHandle, gfx::ShaderStageFlags_Vertex, 0, sizeof(glm::mat4), glm::value_ptr(modelMat));
+
 			gfx::draw(commandListHandle, 3, 1, 0, 0);
 		}
 		gfx::end_render_pass(commandListHandle);
