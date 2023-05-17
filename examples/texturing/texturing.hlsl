@@ -2,6 +2,7 @@ struct VSIn
 {
     float3 position : POSITION;
     float3 normal : NORMAL;
+    float2 texCoords : TEXCOORD0;
 };
 
 struct VSOut
@@ -9,7 +10,7 @@ struct VSOut
     float4 pos : SV_POSITION;
     float3 worldPos : POSITION;
     float3 worldNormal : NORMAL;
-    float4 color : COLOR;
+    float2 texCoords : TEXCOORD0;
 };
 
 struct UniformBufferData
@@ -44,16 +45,19 @@ VSOut vs_main(VSIn input)
     output.pos = pos;
     output.worldPos = worldPos.xyz;
     output.worldNormal = tempNormal.xyz;
-    output.color = float4(1.0, 1.0, 1.0, 1.0);
+    output.texCoords = input.texCoords;
     return output;
 }
+
+Texture2D textureColor : register(t1);
+SamplerState samplerColor : register(s1);
 
 static const float3 LIGHT_COLOR = float3(1.0, 1.0, 1.0);
 static const float3 LIGHT_POS = float3(3, 2, -1);
 
 float4 ps_main(VSOut input) : SV_TARGET
 {
-    float3 objectColor = float3(1.0, 1.0, 1.0);
+    float3 objectColor = textureColor.Sample(samplerColor, input.texCoords).xyz;
 
     float3 norm = normalize(input.worldNormal);
     float3 lightDir = normalize(LIGHT_POS - input.worldPos);
