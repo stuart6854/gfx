@@ -123,6 +123,8 @@ namespace sm::gfx
 	enum class Format
 	{
 		eUndefined,
+		eRG8,
+		eRG32,
 		eRGB8,
 		eRGB32,
 		eRGBA8,

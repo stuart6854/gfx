@@ -119,6 +119,10 @@ namespace sm::gfx
 		{
 			case Format::eUndefined:
 				return vk::Format::eUndefined;
+			case Format::eRG8:
+				return vk::Format::eR8G8Unorm;
+			case Format::eRG32:
+				return vk::Format::eR32G32Sfloat;
 			case Format::eRGB8:
 				return vk::Format::eR8G8B8Unorm;
 			case Format::eRGB32:
@@ -148,10 +152,14 @@ namespace sm::gfx
 		{
 			case Format::eUndefined:
 				return 0;
+			case Format::eRG8:
+				return 1 * 2;
 			case Format::eRGB8:
 				return 1 * 3;
 			case Format::eRGBA8:
 				return 1 * 4;
+			case Format::eRG32:
+				return 4 * 2;
 			case Format::eRGB32:
 				return 4 * 3;
 			case Format::eRGBA32:
