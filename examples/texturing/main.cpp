@@ -13,6 +13,7 @@
 #endif
 #include <GLFW/glfw3native.h>
 
+#include <glm/ext/vector_float2.hpp>
 #include <glm/ext/vector_float3.hpp>
 #include <glm/ext/matrix_float4x4.hpp>
 #include <glm/ext/matrix_transform.hpp>
@@ -49,6 +50,7 @@ struct Vertex
 {
 	glm::vec3 pos;
 	glm::vec3 normal;
+	glm::vec2 texCoord;
 };
 
 bool read_obj_model(const std::string& filename, std::vector<Vertex>& outVertices, std::vector<std::uint32_t>& outTriangles)
@@ -102,14 +104,12 @@ bool read_obj_model(const std::string& filename, std::vector<Vertex>& outVertice
 					vertex.normal.z = attrib.normals[3 * idx.normal_index + 2];
 				}
 
-#if false
 				const bool hasTexCoords = idx.texcoord_index >= 0;
 				if (hasTexCoords)
 				{
-					const auto tx = attrib.texcoords[2 * idx.texcoord_index + 0];
-					const auto ty = attrib.texcoords[2 * idx.texcoord_index + 1];
+					vertex.texCoord.x = attrib.texcoords[2 * idx.texcoord_index + 0];
+					vertex.texCoord.y = attrib.texcoords[2 * idx.texcoord_index + 1];
 				}
-#endif
 			}
 			indexOffset += faceVertexCount;
 		}
@@ -212,6 +212,7 @@ int main()
 		.vertexAttributes = {
 			{ "Position", gfx::Format::eRGB32 },
 			{ "Normal", gfx::Format::eRGB32 },
+			{ "TexCoord", gfx::Format::eRG32 },
 		},
 		.fragmentCode = fragShaderBinary,
 		.descriptorSets = {
