@@ -265,6 +265,19 @@ int main()
 	}
 #pragma endregion
 
+	gfx::TextureInfo shadowAttachmentInfo{
+		.usage = gfx::TextureUsage::eColorAttachment,
+		.type = gfx::TextureType::e2D,
+		.width = WINDOW_WIDTH,
+		.height = WINDOW_HEIGHT,
+		.format = gfx::Format::eRGBA8, // #TODO: Make eR32.
+	};
+	gfx::TextureHandle shadowAttachmentHandle{};
+	if (!gfx::create_texture(shadowAttachmentHandle, deviceHandle, shadowAttachmentInfo))
+	{
+		throw std::runtime_error("Failed to create GFX texture for shadow attachment!");
+	}
+
 	gfx::TextureInfo mainAttachmentInfo{
 		.usage = gfx::TextureUsage::eColorAttachment,
 		.type = gfx::TextureType::e2D,
@@ -294,9 +307,27 @@ int main()
 #pragma region RenderGraph
 
 	gfx::RenderGraph renderGraph{};
+	auto& shadowPass = renderGraph.add_graphics_pass("shadowPass");
+	shadowPass.write(shadowAttachmentHandle);
+	shadowPass.on_build([&](std::uint32_t width, std::uint32_t height) {});
+	shadowPass.on_execute([&](gfx::CommandListHandle commandListHandle) {
+		gfx::bind_pipeline(commandListHandle, pipelineHandle);
+		gfx::bind_descriptor_set(commandListHandle, descriptorSetHandle);
+
+		glm::mat4 modelMat = glm::mat4(1.0f);
+		modelMat = glm::scale(modelMat, glm::vec3(8, 8, 8));
+		gfx::set_constants(commandListHandle, gfx::ShaderStageFlags_Vertex, 0, sizeof(glm::mat4), glm::value_ptr(modelMat));
+
+		gfx::bind_index_buffer(commandListHandle, indexBufferHandle, gfx::IndexType::eUInt32);
+		gfx::bind_vertex_buffer(commandListHandle, vertexBufferHandle);
+
+		gfx::draw_indexed(commandListHandle, triangles.size(), 1, 0, 0, 0);
+	});
+
 	auto& mainPass = renderGraph.add_graphics_pass("mainPass");
 	mainPass.write(mainAttachmentHandle);
 	mainPass.write(depthAttachmentHandle);
+	mainPass.read(shadowAttachmentHandle);
 	mainPass.on_build([&](std::uint32_t width, std::uint32_t height) {
 		//		gfx::resize_texture(mainAttachmentHandle, width, height);
 
@@ -342,7 +373,7 @@ int main()
 		gfx::reset(commandListHandle);
 		gfx::begin(commandListHandle);
 
-		renderGraph.execute(deviceHandle);
+		renderGraph.execute(commandListHandle);
 
 		gfx::TextureHandle swapChainImageHandle{};
 		if (!gfx::get_swap_chain_image(swapChainImageHandle, swapChainHandle))

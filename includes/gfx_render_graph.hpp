@@ -9,6 +9,7 @@
 
 #include <string>
 #include <functional>
+#include <unordered_map>
 
 /*
  * Reference: https://logins.github.io/graphics/2021/05/31/RenderGraphs.html
@@ -18,8 +19,8 @@ namespace sm::gfx
 	class RenderGraphPass
 	{
 	public:
-		void read(TextureHandle imageHandle);
-		void write(TextureHandle imageHandle);
+		void read(TextureHandle textureHandle);
+		void write(TextureHandle textureHandle);
 
 		/***
 		 * @brief Define the function that gets called when the SwapChain is rebuilt (eg. resized).
@@ -32,6 +33,22 @@ namespace sm::gfx
 		 * @param executeFunc
 		 */
 		void on_execute(std::function<void(CommandListHandle commandListHandle)>&& executeFunc);
+
+	private:
+		friend class RenderGraph;
+
+		void build(std::uint32_t width, std::uint32_t height);
+		void execute(CommandListHandle commandListHandle);
+
+	private:
+		std::vector<TextureHandle> m_reads;
+		std::vector<TextureState> m_readStates;
+
+		std::vector<TextureHandle> m_writes;
+		std::vector<TextureState> m_writeStates;
+
+		std::function<void(std::uint32_t width, std::uint32_t height)> m_buildFunc;
+		std::function<void(CommandListHandle commandListHandle)> m_executeFunc;
 	};
 
 	class RenderGraph
@@ -48,7 +65,12 @@ namespace sm::gfx
 		/**
 		 * @brief Execute the render graph.
 		 */
-		void execute(DeviceHandle deviceHandle);
+		void execute(CommandListHandle commandListHandle);
+
+	private:
+		std::unordered_map<std::string, std::unique_ptr<RenderGraphPass>> m_passMap;
+
+		std::vector<RenderGraphPass*> m_executionOrder; // Should be decided by the end of compilation.
 	};
 
 } // namespace sm::gfx

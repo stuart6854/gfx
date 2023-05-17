@@ -1,4 +1,4 @@
-add_library(gfx gfx.cpp)
+add_library(gfx gfx.cpp gfx_render_graph.cpp)
 
 target_include_directories(gfx PUBLIC ../includes)
 
