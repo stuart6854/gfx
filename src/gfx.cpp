@@ -378,6 +378,30 @@ namespace sm::gfx
 		device->bind_buffer_to_descriptor_set(descriptorSetHandle, binding, bufferHandle);
 	}
 
+	void bind_texture_to_descriptor_set(DescriptorSetHandle descriptorSetHandle, std::uint32_t binding, TextureHandle textureHandle, SamplerHandle samplerHandle)
+	{
+		GFX_ASSERT(s_context && s_context->is_valid(), "GFX has not been initialised!");
+		if (descriptorSetHandle.deviceHandle != textureHandle.deviceHandle)
+		{
+			s_errorCallback("GFX - Buffer must belong to the same device as the descriptor set it is to be bound too!");
+			return;
+		}
+		if (descriptorSetHandle.deviceHandle != samplerHandle.deviceHandle)
+		{
+			s_errorCallback("GFX - Sampler must belong to the same device as the descriptor set it is to be bound too!");
+			return;
+		}
+
+		Device* device{ nullptr };
+		if (!s_context->get_device(device, descriptorSetHandle.deviceHandle))
+		{
+			return;
+		}
+		GFX_ASSERT(device != nullptr, "Device should not be null!");
+
+		device->bind_texture_to_descriptor_set(descriptorSetHandle, binding, textureHandle, samplerHandle);
+	}
+
 	bool create_buffer(BufferHandle& outBufferHandle, DeviceHandle deviceHandle, const BufferInfo& bufferInfo)
 	{
 		GFX_ASSERT(s_context && s_context->is_valid(), "GFX has not been initialised!");
@@ -1430,6 +1454,44 @@ namespace sm::gfx
 		write.setDescriptorCount(1);
 		write.setDescriptorType(buffer->get_descriptor_type());
 		write.setBufferInfo(buffer->get_descriptor_info());
+
+		m_device->updateDescriptorSets(write, {});
+	}
+
+	void Device::bind_texture_to_descriptor_set(DescriptorSetHandle descriptorSetHandle, std::uint32_t binding, TextureHandle textureHandle, SamplerHandle samplerHandle)
+	{
+		if (!m_descriptorSetMap.contains(descriptorSetHandle.resourceHandle))
+		{
+			s_errorCallback("GFX - Cannot bind buffer to unknown descriptor set!");
+			return;
+		}
+		const auto descriptorSet = m_descriptorSetMap.at(descriptorSetHandle.resourceHandle).get();
+
+		if (!m_textureMap.contains(textureHandle.resourceHandle))
+		{
+			s_errorCallback("GFX - Cannot bind unknown buffer to descriptor set!");
+			return;
+		}
+		const auto& texture = m_textureMap.at(textureHandle.resourceHandle);
+
+		if (!m_samplerMap.contains(samplerHandle.resourceHandle))
+		{
+			s_errorCallback("GFX - Cannot bind unknown sampler to descriptor set!");
+			return;
+		}
+		const auto& sampler = m_samplerMap.at(samplerHandle.resourceHandle);
+
+		vk::DescriptorImageInfo image_info{};
+		image_info.setImageView(texture->get_view());
+		image_info.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+		image_info.setSampler(sampler.get());
+
+		vk::WriteDescriptorSet write{};
+		write.setDstSet(descriptorSet);
+		write.setDstBinding(binding);
+		write.setDescriptorCount(1);
+		write.setDescriptorType(vk::DescriptorType::eCombinedImageSampler);
+		write.setImageInfo(image_info);
 
 		m_device->updateDescriptorSets(write, {});
 	}

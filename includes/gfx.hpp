@@ -200,6 +200,7 @@ namespace sm::gfx
 
 	bool create_descriptor_set_from_pipeline(DescriptorSetHandle& outDescriptorSetHandle, PipelineHandle pipelineHandle, std::uint32_t set);
 	void bind_buffer_to_descriptor_set(DescriptorSetHandle descriptorSetHandle, std::uint32_t binding, BufferHandle bufferHandle);
+	void bind_texture_to_descriptor_set(DescriptorSetHandle descriptorSetHandle, std::uint32_t binding, TextureHandle textureHandle, SamplerHandle samplerHandle);
 
 	enum class BufferType
 	{

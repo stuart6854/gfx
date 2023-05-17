@@ -382,6 +382,9 @@ int main()
 	{
 		throw std::runtime_error("Failed to create GFX sampler!");
 	}
+
+	gfx::bind_texture_to_descriptor_set(descriptorSetHandle, 1, textureHandle, samplerHandle);
+
 #pragma endregion
 
 	gfx::CommandListHandle commandListHandle{};
