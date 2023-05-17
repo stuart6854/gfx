@@ -55,7 +55,7 @@ namespace sm::gfx
 		m_executionOrder.clear();
 		for (const auto& [name, pass] : m_passMap)
 		{
-			pass->build();
+			//			pass->build();
 			m_executionOrder.push_back(pass.get());
 		}
 
