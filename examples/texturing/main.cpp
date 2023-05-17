@@ -22,6 +22,9 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+
 #include <iostream>
 #include <fstream>
 
@@ -112,6 +115,25 @@ bool read_obj_model(const std::string& filename, std::vector<Vertex>& outVertice
 		}
 	}
 
+	return true;
+}
+
+bool read_texture(const std::string& filename, std::vector<std::uint8_t>& outPixelData, std::int32_t& outWidth, std::int32_t& outHeight)
+{
+	std::int32_t comp{};
+	auto* data = stbi_load(filename.c_str(), &outWidth, &outHeight, &comp, 4);
+	if (data == nullptr)
+	{
+		outWidth = 0;
+		outHeight = 0;
+		return false;
+	}
+
+	const std::uint64_t dataSize = outWidth * outHeight * 4;
+	outPixelData.resize(dataSize);
+	std::memcpy(outPixelData.data(), data, dataSize);
+
+	stbi_image_free(data);
 	return true;
 }
 
@@ -235,6 +257,7 @@ int main()
 	gfx::bind_buffer_to_descriptor_set(descriptorSetHandle, 0, uniformBufferHandle);
 
 #pragma region Vertex/Index Buffers
+
 	std::vector<Vertex> vertices{};
 	std::vector<std::uint32_t> triangles{};
 	if (!read_obj_model("./viking_room.obj", vertices, triangles))
@@ -275,6 +298,33 @@ int main()
 		std::memcpy(indexBufferPtr, triangles.data(), indexBufferInfo.size);
 		gfx::unmap_buffer(indexBufferHandle);
 	}
+
+#pragma endregion
+
+#pragma region Texture
+
+	std::vector<std::uint8_t> pixels{};
+	std::int32_t width{};
+	std::int32_t height{};
+	if (!read_texture("./viking_room.png", pixels, width, height))
+	{
+		throw std::runtime_error("Failed to read texture!");
+	}
+
+	gfx::TextureInfo textureInfo{
+		.usage = gfx::TextureUsage::eTexture,
+		.type = gfx::TextureType::e2D,
+		.width = static_cast<std::uint32_t>(width),
+		.height = static_cast<std::uint32_t>(height),
+		.format = gfx::Format::eRGBA8,
+		.mipLevels = 1,
+	};
+	gfx::TextureHandle textureHandle{};
+	if (!gfx::create_texture(textureHandle, deviceHandle, textureInfo))
+	{
+		throw std::runtime_error("Failed to create GFX texture!");
+	}
+
 #pragma endregion
 
 	gfx::CommandListHandle commandListHandle{};
