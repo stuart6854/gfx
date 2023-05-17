@@ -120,6 +120,8 @@ bool read_obj_model(const std::string& filename, std::vector<Vertex>& outVertice
 
 bool read_texture(const std::string& filename, std::vector<std::uint8_t>& outPixelData, std::int32_t& outWidth, std::int32_t& outHeight)
 {
+	stbi_set_flip_vertically_on_load(true);
+
 	std::int32_t comp{};
 	auto* data = stbi_load(filename.c_str(), &outWidth, &outHeight, &comp, 4);
 	if (data == nullptr)
