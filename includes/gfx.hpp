@@ -203,6 +203,7 @@ namespace sm::gfx
 		eIndex,
 		eUniform,
 		eStorage,
+		eUpload, // Used for uploading/copying data to GPU using command lists.
 	};
 	struct BufferInfo
 	{

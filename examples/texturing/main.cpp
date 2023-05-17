@@ -325,6 +325,50 @@ int main()
 		throw std::runtime_error("Failed to create GFX texture!");
 	}
 
+	// Create & Submit command list to upload texture data
+	{
+		// Create staging buffer
+		gfx::BufferInfo stagingBufferInfo{
+			.type = gfx::BufferType::eUpload,
+			.size = sizeof(std::uint8_t) * pixels.size(),
+		};
+		gfx::BufferHandle stagingBufferHandle{};
+		if (!gfx::create_buffer(stagingBufferHandle, deviceHandle, stagingBufferInfo))
+		{
+			throw std::runtime_error("Failed to create GFX staging buffer!");
+		}
+
+		void* stagingBufferPtr{ nullptr };
+		if (gfx::map_buffer(stagingBufferHandle, stagingBufferPtr))
+		{
+			std::memcpy(stagingBufferPtr, pixels.data(), stagingBufferInfo.size);
+			gfx::unmap_buffer(stagingBufferHandle);
+		}
+
+		gfx::CommandListHandle uploadCommandListHandle{};
+		if (!gfx::create_command_list(uploadCommandListHandle, deviceHandle, 0))
+		{
+			throw std::runtime_error("Failed to create GFX upload command list!");
+		}
+
+		gfx::begin(uploadCommandListHandle);
+
+		// #TODO: Upload command
+
+		gfx::end(uploadCommandListHandle);
+
+		gfx::SubmitInfo submitInfo{
+			.commandList = uploadCommandListHandle,
+			.waitSemaphoreHandle = {}
+		};
+		gfx::FenceHandle fenceHandle;
+		gfx::submit_command_list(submitInfo, &fenceHandle, nullptr);
+
+		gfx::wait_on_fence(fenceHandle);
+		gfx::destroy_command_list(deviceHandle, uploadCommandListHandle);
+		gfx::destroy_buffer(stagingBufferHandle);
+	}
+
 #pragma endregion
 
 	gfx::CommandListHandle commandListHandle{};
