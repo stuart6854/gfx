@@ -90,6 +90,7 @@ namespace sm::gfx
 	GFX_DEFINE_RESOURCE_HANDLE(DescriptorSetHandle);
 	GFX_DEFINE_RESOURCE_HANDLE(BufferHandle);
 	GFX_DEFINE_RESOURCE_HANDLE(TextureHandle);
+	GFX_DEFINE_RESOURCE_HANDLE(SamplerHandle);
 	GFX_DEFINE_RESOURCE_HANDLE(SwapChainHandle);
 
 	void set_error_callback(std::function<void(const char* msg)> callback);
@@ -238,6 +239,24 @@ namespace sm::gfx
 	};
 	bool create_texture(TextureHandle& outTextureHandle, DeviceHandle deviceHandle, const TextureInfo& textureInfo);
 	void destroy_texture(TextureHandle textureHandle);
+
+	enum class SamplerAddressMode
+	{
+		eRepeat,
+		eClamp,
+	};
+	enum class SamplerFilterMode
+	{
+		eLinear,
+		eNearest,
+	};
+	struct SamplerInfo
+	{
+		SamplerAddressMode addressMode;
+		SamplerFilterMode filterMode;
+	};
+	bool create_sampler(SamplerHandle& outSamplerHandle, DeviceHandle deviceHandle, const SamplerInfo& samplerInfo);
+	void destroy_sampler(SamplerHandle samplerHandle);
 
 	struct SwapChainInfo
 	{

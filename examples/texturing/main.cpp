@@ -371,6 +371,15 @@ int main()
 		gfx::destroy_buffer(stagingBufferHandle);
 	}
 
+	gfx::SamplerInfo samplerInfo{
+		.addressMode = gfx::SamplerAddressMode::eRepeat,
+		.filterMode = gfx::SamplerFilterMode::eLinear,
+	};
+	gfx::SamplerHandle samplerHandle{};
+	if (!gfx::create_sampler(samplerHandle, deviceHandle, samplerInfo))
+	{
+		throw std::runtime_error("Failed to create GFX sampler!");
+	}
 #pragma endregion
 
 	gfx::CommandListHandle commandListHandle{};

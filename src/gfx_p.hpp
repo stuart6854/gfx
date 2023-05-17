@@ -111,6 +111,9 @@ namespace sm::gfx
 		void destroy_texture(TextureHandle textureHandle);
 		bool get_texture(Texture*& outTexture, TextureHandle textureHandle);
 
+		bool create_sampler(SamplerHandle& outSamplerHandle, const SamplerInfo& samplerInfo);
+		void destroy_sampler(SamplerHandle samplerHandle);
+
 		bool create_swap_chain(SwapChainHandle& outSwapChainHandle, const SwapChainInfo& swapChainInfo);
 		void destroy_swap_chain(SwapChainHandle swapChainHandle);
 		bool get_swap_chain(SwapChain*& outSwapChain, SwapChainHandle swapChainHandle);
@@ -154,6 +157,9 @@ namespace sm::gfx
 
 		std::unordered_map<ResourceHandle, std::unique_ptr<Texture>> m_textureMap;
 		std::uint32_t m_nextTextureId{ 1 };
+
+		std::unordered_map<ResourceHandle, vk::UniqueSampler> m_samplerMap;
+		std::uint32_t m_nextSamplerId{ 1 };
 
 		std::unordered_map<ResourceHandle, std::unique_ptr<SwapChain>> m_swapChainMap;
 		std::uint32_t m_nextSwapChainId{ 1 };

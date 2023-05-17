@@ -417,6 +417,24 @@ namespace sm::gfx
 	{
 	}
 
+	bool create_sampler(SamplerHandle& outSamplerHandle, DeviceHandle deviceHandle, const SamplerInfo& samplerInfo)
+	{
+		GFX_ASSERT(s_context && s_context->is_valid(), "GFX has not been initialised!");
+
+		Device* device{ nullptr };
+		if (!s_context->get_device(device, deviceHandle))
+		{
+			return false;
+		}
+		GFX_ASSERT(device != nullptr, "Device should not be null!");
+
+		return device->create_sampler(outSamplerHandle, samplerInfo);
+	}
+
+	void destroy_sampler(SamplerHandle samplerHandle)
+	{
+	}
+
 	bool create_swap_chain(SwapChainHandle& outSwapChainHandle, DeviceHandle deviceHandle, const SwapChainInfo& swapChainInfo)
 	{
 		GFX_ASSERT(s_context && s_context->is_valid(), "GFX has not been initialised!");
@@ -1477,6 +1495,28 @@ namespace sm::gfx
 
 		outTexture = m_textureMap.at(textureHandle.resourceHandle).get();
 		return true;
+	}
+
+	bool Device::create_sampler(SamplerHandle& outSamplerHandle, const SamplerInfo& samplerInfo)
+	{
+		SamplerHandle samplerHandle(m_deviceHandle, ResourceHandle(m_nextSamplerId));
+
+		vk::SamplerCreateInfo vk_sampler_info{};
+		vk_sampler_info.setAddressModeU(samplerInfo.addressMode == SamplerAddressMode::eRepeat ? vk::SamplerAddressMode::eRepeat : vk::SamplerAddressMode::eClampToEdge);
+		vk_sampler_info.setAddressModeV(samplerInfo.addressMode == SamplerAddressMode::eRepeat ? vk::SamplerAddressMode::eRepeat : vk::SamplerAddressMode::eClampToEdge);
+		vk_sampler_info.setAddressModeW(samplerInfo.addressMode == SamplerAddressMode::eRepeat ? vk::SamplerAddressMode::eRepeat : vk::SamplerAddressMode::eClampToEdge);
+		vk_sampler_info.setMinFilter(samplerInfo.filterMode == SamplerFilterMode::eLinear ? vk::Filter::eLinear : vk::Filter::eNearest);
+		vk_sampler_info.setMagFilter(samplerInfo.filterMode == SamplerFilterMode::eLinear ? vk::Filter::eLinear : vk::Filter::eNearest);
+
+		m_samplerMap[samplerHandle.resourceHandle] = m_device->createSamplerUnique(vk_sampler_info);
+		m_nextSamplerId += 1;
+
+		outSamplerHandle = samplerHandle;
+		return true;
+	}
+
+	void Device::destroy_sampler(SamplerHandle samplerHandle)
+	{
 	}
 
 	bool Device::create_swap_chain(SwapChainHandle& outSwapChainHandle, const SwapChainInfo& swapChainInfo)
