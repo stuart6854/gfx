@@ -163,6 +163,23 @@ namespace sm::gfx
 		return 0;
 	}
 
+	auto convert_descriptor_type_to_vk_descriptor_type(DescriptorType descriptorType) -> vk::DescriptorType
+	{
+		switch (descriptorType)
+		{
+			case DescriptorType::eStorageBuffer:
+				return vk::DescriptorType::eStorageBuffer;
+			case DescriptorType::eUniformBuffer:
+				return vk::DescriptorType::eUniformBuffer;
+			case DescriptorType::eTexture:
+				return vk::DescriptorType::eCombinedImageSampler;
+			default:
+				GFX_ASSERT(false, "Cannot convert unknown DescriptorType to vk::DescriptorType!");
+				break;
+		}
+		return {};
+	}
+
 	auto convert_buffer_type_to_vk_usage(BufferType bufferType) -> vk::BufferUsageFlags
 	{
 		switch (bufferType)
@@ -1560,22 +1577,9 @@ namespace sm::gfx
 	auto Device::get_descriptor_set_layout_binding(const DescriptorBindingInfo& descriptorBindingInfo) -> vk::DescriptorSetLayoutBinding
 	{
 		vk::DescriptorSetLayoutBinding outBinding{};
-
-		switch (descriptorBindingInfo.type)
-		{
-			case DescriptorType::eStorageBuffer:
-				outBinding.setDescriptorType(vk::DescriptorType::eStorageBuffer);
-				break;
-			case DescriptorType::eUniformBuffer:
-				outBinding.setDescriptorType(vk::DescriptorType::eUniformBuffer);
-				break;
-		}
-
+		outBinding.setDescriptorType(convert_descriptor_type_to_vk_descriptor_type(descriptorBindingInfo.type));
 		outBinding.setDescriptorCount(descriptorBindingInfo.count);
-
-		auto stageFlags = convert_shader_stages_to_vk_shader_stage_flags(descriptorBindingInfo.shaderStages);
-		outBinding.setStageFlags(stageFlags);
-
+		outBinding.setStageFlags(convert_shader_stages_to_vk_shader_stage_flags(descriptorBindingInfo.shaderStages));
 		return outBinding;
 	}
 

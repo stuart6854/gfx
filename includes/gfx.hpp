@@ -151,6 +151,7 @@ namespace sm::gfx
 	{
 		eStorageBuffer,
 		eUniformBuffer,
+		eTexture,
 	};
 	constexpr std::uint32_t ShaderStageFlags_Compute = 1u << 0u;
 	constexpr std::uint32_t ShaderStageFlags_Vertex = 1u << 1u;

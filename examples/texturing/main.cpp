@@ -217,6 +217,7 @@ int main()
 		.descriptorSets = {
 			gfx::DescriptorSetInfo{ .bindings = {
 										{ gfx::DescriptorType::eUniformBuffer, 1, gfx::ShaderStageFlags_Vertex },
+										{ gfx::DescriptorType::eTexture, 1, gfx::ShaderStageFlags_Fragment },
 									} },
 		},
 		.constantBlock = { sizeof(glm::mat4), gfx::ShaderStageFlags_Vertex },
