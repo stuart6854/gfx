@@ -172,6 +172,8 @@ namespace sm::gfx
 				return vk::BufferUsageFlagBits::eUniformBuffer;
 			case BufferType::eStorage:
 				return vk::BufferUsageFlagBits::eStorageBuffer;
+			case BufferType::eUpload:
+				return vk::BufferUsageFlagBits::eTransferSrc;
 			default:
 				GFX_ASSERT(false, "Cannot convert unknown BufferType to vk::BufferUsageFlags!");
 				break;
@@ -189,6 +191,7 @@ namespace sm::gfx
 				return vk::DescriptorType::eStorageBuffer;
 			case BufferType::eVertex:
 			case BufferType::eIndex:
+			case BufferType::eUpload:
 				break; // These buffer types cannot be used in descriptors.
 			default:
 				GFX_ASSERT(false, "Cannot convert unknown BufferType to vk::DescriptorType!");
