@@ -49,7 +49,9 @@ VSOut vs_main(VSIn input)
     return output;
 }
 
+[[vk::combinedImageSampler]]
 Texture2D textureColor : register(t1);
+[[vk::combinedImageSampler]]
 SamplerState samplerColor : register(s1);
 
 static const float3 LIGHT_COLOR = float3(1.0, 1.0, 1.0);
