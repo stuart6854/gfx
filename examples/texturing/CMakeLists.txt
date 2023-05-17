@@ -27,6 +27,15 @@ add_custom_command(
 )
 add_custom_target("${GFX_EXAMPLE_NAME}_model" DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/viking_room.obj")
 
+add_custom_command(
+        OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/viking_room.png"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "viking_room.png" "${CMAKE_CURRENT_BINARY_DIR}/viking_room.png"
+        DEPENDS "viking_room.png"
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMENT "Copying texture."
+)
+add_custom_target("${GFX_EXAMPLE_NAME}_texture" DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/viking_room.png")
+
 add_executable(${GFX_EXAMPLE_NAME} main.cpp)
 
 target_link_libraries(${GFX_EXAMPLE_NAME} PRIVATE gfx glfw glm::glm tinyobjloader::tinyobjloader)
@@ -34,3 +43,4 @@ target_link_libraries(${GFX_EXAMPLE_NAME} PRIVATE gfx glfw glm::glm tinyobjloade
 add_dependencies(${GFX_EXAMPLE_NAME} "${GFX_EXAMPLE_NAME}_shader_vert")
 add_dependencies(${GFX_EXAMPLE_NAME} "${GFX_EXAMPLE_NAME}_shader_frag")
 add_dependencies(${GFX_EXAMPLE_NAME} "${GFX_EXAMPLE_NAME}_model")
+add_dependencies(${GFX_EXAMPLE_NAME} "${GFX_EXAMPLE_NAME}_texture")
