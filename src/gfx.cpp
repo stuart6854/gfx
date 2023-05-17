@@ -74,18 +74,21 @@ namespace sm::gfx
 
 	static const std::unordered_map<TextureState, vk::ImageLayout> s_textureStateImageLayoutMap{
 		{ TextureState::eUndefined, vk::ImageLayout::eUndefined },
+		{ TextureState::eUploadDst, vk::ImageLayout::eTransferDstOptimal },
 		{ TextureState::eShaderRead, vk::ImageLayout::eShaderReadOnlyOptimal },
 		{ TextureState::eRenderTarget, vk::ImageLayout::eAttachmentOptimal },
 		{ TextureState::ePresent, vk::ImageLayout::ePresentSrcKHR },
 	};
 	static const std::unordered_map<TextureState, vk::PipelineStageFlagBits2> s_barrierTextureStatePipelineStageMaskMap{
 		{ TextureState::eUndefined, vk::PipelineStageFlagBits2::eTopOfPipe },
+		{ TextureState::eUploadDst, vk::PipelineStageFlagBits2::eTransfer },
 		{ TextureState::eShaderRead, vk::PipelineStageFlagBits2::eFragmentShader },
 		{ TextureState::eRenderTarget, vk::PipelineStageFlagBits2::eColorAttachmentOutput },
 		{ TextureState::ePresent, vk::PipelineStageFlagBits2::eBottomOfPipe },
 	};
 	static const std::unordered_map<TextureState, vk::AccessFlagBits2> s_barrierTextureStateAccessMaskMap{
 		{ TextureState::eUndefined, vk::AccessFlagBits2::eNone },
+		{ TextureState::eUploadDst, vk::AccessFlagBits2::eTransferWrite },
 		{ TextureState::eShaderRead, vk::AccessFlagBits2::eShaderRead },
 		{ TextureState::eRenderTarget, vk::AccessFlagBits2::eColorAttachmentWrite },
 		{ TextureState::ePresent, vk::AccessFlagBits2::eNone },
@@ -222,7 +225,7 @@ namespace sm::gfx
 		switch (textureUsage)
 		{
 			case TextureUsage::eTexture:
-				return vk::ImageUsageFlagBits::eSampled;
+				return vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst;
 			case TextureUsage::eColorAttachment:
 				return vk::ImageUsageFlagBits::eColorAttachment;
 			case TextureUsage::eDepthStencilAttachment:
@@ -855,6 +858,38 @@ namespace sm::gfx
 		}
 
 		commandList->transition_texture(texture, oldState, newState);
+	}
+
+	void copy_buffer_to_texture(CommandListHandle commandListHandle, BufferHandle bufferHandle, TextureHandle textureHandle)
+	{
+		GFX_ASSERT(s_context && s_context->is_valid(), "GFX has not been initialised!");
+
+		Device* device{ nullptr };
+		if (!s_context->get_device(device, commandListHandle.deviceHandle))
+		{
+			return;
+		}
+		GFX_ASSERT(device != nullptr, "Device should not be null!");
+
+		Buffer* buffer{ nullptr };
+		if (!device->get_buffer(buffer, bufferHandle))
+		{
+			return;
+		}
+
+		Texture* texture{ nullptr };
+		if (!device->get_texture(texture, textureHandle))
+		{
+			return;
+		}
+
+		CommandList* commandList{ nullptr };
+		if (!device->get_command_list(commandList, commandListHandle))
+		{
+			return;
+		}
+
+		commandList->copy_buffer_to_texture(buffer, texture);
 	}
 
 #pragma endregion
@@ -1768,6 +1803,29 @@ namespace sm::gfx
 		dependency_info.setImageMemoryBarriers(barrier);
 
 		m_commandBuffer->pipelineBarrier2(dependency_info);
+	}
+
+	void CommandList::copy_buffer_to_texture(Buffer* buffer, Texture* texture)
+	{
+		if (!m_hasBegun)
+		{
+			return;
+		}
+
+		vk::BufferImageCopy2 region{};
+		region.setImageExtent(texture->get_extent());
+		region.setImageOffset({});
+		region.imageSubresource.setAspectMask(vk::ImageAspectFlagBits::eColor);
+		region.imageSubresource.setBaseArrayLayer(0);
+		region.imageSubresource.setLayerCount(1);
+		region.imageSubresource.setMipLevel(0);
+
+		vk::CopyBufferToImageInfo2 copy_info{};
+		copy_info.setSrcBuffer(buffer->get_buffer());
+		copy_info.setDstImage(texture->get_image());
+		copy_info.setDstImageLayout(vk::ImageLayout::eTransferDstOptimal);
+		copy_info.setRegions(region);
+		m_commandBuffer->copyBufferToImage2(copy_info);
 	}
 
 	auto CommandList::operator=(CommandList&& rhs) noexcept -> CommandList&

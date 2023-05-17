@@ -353,7 +353,9 @@ int main()
 
 		gfx::begin(uploadCommandListHandle);
 
-		// #TODO: Upload command
+		gfx::transition_texture(uploadCommandListHandle, textureHandle, gfx::TextureState::eUndefined, gfx::TextureState::eUploadDst);
+		gfx::copy_buffer_to_texture(uploadCommandListHandle, stagingBufferHandle, textureHandle);
+		gfx::transition_texture(uploadCommandListHandle, textureHandle, gfx::TextureState::eUploadDst, gfx::TextureState::eShaderRead);
 
 		gfx::end(uploadCommandListHandle);
 

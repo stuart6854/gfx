@@ -291,11 +291,14 @@ namespace sm::gfx
 	enum class TextureState : std::uint32_t
 	{
 		eUndefined,
+		eUploadDst, // Textures should be in this state when they are being uploaded to.
 		eShaderRead,
 		eRenderTarget,
 		ePresent,
 	};
 	void transition_texture(CommandListHandle commandListHandle, TextureHandle textureHandle, TextureState oldState, TextureState newState);
+
+	void copy_buffer_to_texture(CommandListHandle commandListHandle, BufferHandle bufferHandle, TextureHandle textureHandle);
 
 #pragma endregion
 
