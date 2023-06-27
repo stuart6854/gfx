@@ -996,7 +996,7 @@ namespace sm::gfx
 		vk_inst_info.setPEnabledExtensionNames(extensions);
 		vk_inst_info.setPEnabledLayerNames(layers);
 		vk_inst_info.setPNext(&vk_debug_messenger_info);
-		m_instance = vk::createInstanceUnique(vk_inst_info);
+		m_instance = vk::createInstanceUnique(vk_inst_info).value;
 		if (!*m_instance)
 		{
 			s_errorCallback("Failed to create Vulkan instance!");
@@ -1005,7 +1005,7 @@ namespace sm::gfx
 
 		VULKAN_HPP_DEFAULT_DISPATCHER.init(*m_instance);
 
-		m_debugMessenger = m_instance->createDebugUtilsMessengerEXTUnique(vk_debug_messenger_info);
+		m_debugMessenger = m_instance->createDebugUtilsMessengerEXTUnique(vk_debug_messenger_info).value;
 		if (!*m_debugMessenger)
 		{
 			s_errorCallback("Failed to create Vulkan debug messenger!");
@@ -1057,7 +1057,7 @@ namespace sm::gfx
 	Device::Device(Context& context, DeviceHandle deviceHandle, const DeviceInfo& deviceInfo)
 		: m_context(&context), m_deviceHandle(deviceHandle)
 	{
-		auto physicalDevices = m_context->get_instance().enumeratePhysicalDevices();
+		auto physicalDevices = m_context->get_instance().enumeratePhysicalDevices().value;
 		if (physicalDevices.empty())
 		{
 			s_errorCallback("GFX - There are no devices!");
@@ -1157,7 +1157,7 @@ namespace sm::gfx
 		vk_device_info.setQueueCreateInfos(queue_info_vec);
 		vk_device_info.setPEnabledFeatures(&features);
 		vk_device_info.setPNext(&dynamic_rendering_features);
-		m_device = m_physicalDevice.createDeviceUnique(vk_device_info);
+		m_device = m_physicalDevice.createDeviceUnique(vk_device_info).value;
 		if (!*m_device)
 		{
 			s_errorCallback("GFX - Failed to create device!");
@@ -1174,7 +1174,7 @@ namespace sm::gfx
 			vk::CommandPoolCreateInfo cmd_pool_info{};
 			cmd_pool_info.setQueueFamilyIndex(queueFamily);
 			cmd_pool_info.setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer);
-			m_queueFamilyCommandPoolMap[queueFamily] = m_device->createCommandPoolUnique(cmd_pool_info);
+			m_queueFamilyCommandPoolMap[queueFamily] = m_device->createCommandPoolUnique(cmd_pool_info).value;
 
 			auto queueIndex = queueIndexMap[queueFamily];
 			m_queues[i] = m_device->getQueue(queueFamily, queueIndex);
@@ -1186,7 +1186,7 @@ namespace sm::gfx
 		allocator_info.setPhysicalDevice(m_physicalDevice);
 		allocator_info.setDevice(m_device.get());
 		allocator_info.setVulkanApiVersion(VK_API_VERSION_1_3);
-		m_allocator = vma::createAllocatorUnique(allocator_info);
+		m_allocator = vma::createAllocatorUnique(allocator_info).value;
 
 		const std::vector<vk::DescriptorPoolSize> descriptor_pool_sizes{
 			{ vk::DescriptorType::eStorageBuffer, 100 },
@@ -1197,7 +1197,7 @@ namespace sm::gfx
 		descriptor_pool_info.setMaxSets(100);
 		descriptor_pool_info.setPoolSizes(descriptor_pool_sizes);
 		descriptor_pool_info.setFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet);
-		m_descriptorPool = m_device->createDescriptorPoolUnique(descriptor_pool_info);
+		m_descriptorPool = m_device->createDescriptorPoolUnique(descriptor_pool_info).value;
 	}
 
 	bool Device::is_valid() const
@@ -1218,13 +1218,13 @@ namespace sm::gfx
 
 	bool Device::is_present_mode_supported(vk::PresentModeKHR presentMode, vk::SurfaceKHR surface) const
 	{
-		auto supportedPresentModes = m_physicalDevice.getSurfacePresentModesKHR(surface);
+		auto supportedPresentModes = m_physicalDevice.getSurfacePresentModesKHR(surface).value;
 		return std::ranges::find(supportedPresentModes, presentMode) != supportedPresentModes.end();
 	}
 
 	auto Device::get_first_supported_surface_format(const std::vector<vk::Format>& formats, vk::SurfaceKHR surface) -> vk::Format
 	{
-		const auto supportedSurfaceFormats = m_physicalDevice.getSurfaceFormatsKHR(surface);
+		const auto supportedSurfaceFormats = m_physicalDevice.getSurfaceFormatsKHR(surface).value;
 		for (const auto& format : formats)
 		{
 			for (const auto& surfaceFormat : supportedSurfaceFormats)
@@ -1286,7 +1286,7 @@ namespace sm::gfx
 
 			vk::DescriptorSetLayoutCreateInfo set_layout_info{};
 			set_layout_info.setBindings(vk_bindings);
-			m_descriptorSetLayoutMap[hash] = m_device->createDescriptorSetLayoutUnique(set_layout_info);
+			m_descriptorSetLayoutMap[hash] = m_device->createDescriptorSetLayoutUnique(set_layout_info).value;
 		}
 
 		outDescriptorSetLayout = m_descriptorSetLayoutMap.at(hash).get();
@@ -1412,7 +1412,7 @@ namespace sm::gfx
 		vk::DescriptorSetAllocateInfo set_alloc_info{};
 		set_alloc_info.setDescriptorPool(m_descriptorPool.get());
 		set_alloc_info.setSetLayouts(descriptorSetLayout);
-		auto allocatedDescriptorSets = m_device->allocateDescriptorSetsUnique(set_alloc_info);
+		auto allocatedDescriptorSets = m_device->allocateDescriptorSetsUnique(set_alloc_info).value;
 
 		m_descriptorSetMap[descriptorSetHandle.resourceHandle] = std::move(allocatedDescriptorSets[0]);
 		m_nextDescriptorSetId += 1;
@@ -1533,7 +1533,7 @@ namespace sm::gfx
 
 		const auto& buffer = m_bufferMap.at(bufferHandle.resourceHandle);
 
-		outBufferPtr = m_allocator->mapMemory(buffer->get_allocation());
+		outBufferPtr = m_allocator->mapMemory(buffer->get_allocation()).value;
 		return outBufferPtr != nullptr;
 	}
 
@@ -1596,7 +1596,7 @@ namespace sm::gfx
 		vk_sampler_info.setMinFilter(samplerInfo.filterMode == SamplerFilterMode::eLinear ? vk::Filter::eLinear : vk::Filter::eNearest);
 		vk_sampler_info.setMagFilter(samplerInfo.filterMode == SamplerFilterMode::eLinear ? vk::Filter::eLinear : vk::Filter::eNearest);
 
-		m_samplerMap[samplerHandle.resourceHandle] = m_device->createSamplerUnique(vk_sampler_info);
+		m_samplerMap[samplerHandle.resourceHandle] = m_device->createSamplerUnique(vk_sampler_info).value;
 		m_nextSamplerId += 1;
 
 		outSamplerHandle = samplerHandle;
@@ -1639,7 +1639,7 @@ namespace sm::gfx
 		auto fenceHandle = FenceHandle(m_deviceHandle, ResourceHandle(m_nextFenceId));
 
 		vk::FenceCreateInfo fence_info{};
-		m_fenceMap[fenceHandle.resourceHandle] = m_device->createFenceUnique(fence_info);
+		m_fenceMap[fenceHandle.resourceHandle] = m_device->createFenceUnique(fence_info).value;
 
 		m_nextFenceId += 1;
 		return fenceHandle;
@@ -1661,7 +1661,7 @@ namespace sm::gfx
 		cmd_alloc_info.setCommandPool(m_commandPool);
 		cmd_alloc_info.setCommandBufferCount(1);
 		cmd_alloc_info.setLevel(vk::CommandBufferLevel::ePrimary);
-		m_commandBuffer = std::move(m_device.allocateCommandBuffersUnique(cmd_alloc_info)[0]);
+		m_commandBuffer = std::move(m_device.allocateCommandBuffersUnique(cmd_alloc_info).value[0]);
 	}
 
 	CommandList::CommandList(CommandList&& other) noexcept
@@ -1966,7 +1966,7 @@ namespace sm::gfx
 		alloc_info.setUsage(vma::MemoryUsage::eAutoPreferDevice);						// #TODO: Make optional.
 		alloc_info.setFlags(vma::AllocationCreateFlagBits::eHostAccessSequentialWrite); // #TODO: Optional.
 
-		std::tie(m_buffer, m_allocation) = m_allocator.createBufferUnique(vk_buffer_info, alloc_info);
+		std::tie(m_buffer, m_allocation) = m_allocator.createBufferUnique(vk_buffer_info, alloc_info).value;
 
 		m_descriptorType = convert_buffer_type_to_descriptor_type(bufferInfo.type);
 
@@ -2020,7 +2020,7 @@ namespace sm::gfx
 		//		alloc_info.setFlags(vma::AllocationCreateFlagBits::eHostAccessSequentialWrite); // #TODO: Optional.
 
 		auto allocator = m_device->get_allocator();
-		std::tie(m_image, m_allocation) = allocator.createImage(image_info, alloc_info);
+		std::tie(m_image, m_allocation) = allocator.createImage(image_info, alloc_info).value;
 
 		vk::ImageViewCreateInfo view_info{};
 		view_info.setImage(m_image);
@@ -2038,7 +2038,7 @@ namespace sm::gfx
 		view_info.subresourceRange.setLevelCount(1);
 		view_info.subresourceRange.setBaseArrayLayer(0);
 		view_info.subresourceRange.setLayerCount(1);
-		m_view = m_device->get_device().createImageViewUnique(view_info);
+		m_view = m_device->get_device().createImageViewUnique(view_info).value;
 	}
 
 	Texture::Texture(Device& device, vk::Image image, vk::Extent3D extent, vk::Format format)
@@ -2053,7 +2053,7 @@ namespace sm::gfx
 		view_info.subresourceRange.setLevelCount(1);
 		view_info.subresourceRange.setBaseArrayLayer(0);
 		view_info.subresourceRange.setLayerCount(1);
-		m_view = m_device->get_device().createImageViewUnique(view_info);
+		m_view = m_device->get_device().createImageViewUnique(view_info).value;
 	}
 
 	Texture::Texture(Texture&& other) noexcept
@@ -2120,12 +2120,12 @@ namespace sm::gfx
 		{
 			pipeline_layout_info.setPushConstantRanges(constantRange);
 		}
-		m_layout = device.createPipelineLayoutUnique(pipeline_layout_info);
+		m_layout = device.createPipelineLayoutUnique(pipeline_layout_info).value;
 
 		vk::ShaderModuleCreateInfo module_info{};
 		module_info.setCodeSize(shaderCode.size());
 		module_info.setPCode(reinterpret_cast<const std::uint32_t*>(shaderCode.data()));
-		auto module = device.createShaderModuleUnique(module_info);
+		auto module = device.createShaderModuleUnique(module_info).value;
 
 		vk::PipelineShaderStageCreateInfo stage_info{};
 		stage_info.setStage(vk::ShaderStageFlagBits::eCompute);
@@ -2148,12 +2148,12 @@ namespace sm::gfx
 		{
 			pipeline_layout_info.setPushConstantRanges(constantRange);
 		}
-		m_layout = device.createPipelineLayoutUnique(pipeline_layout_info);
+		m_layout = device.createPipelineLayoutUnique(pipeline_layout_info).value;
 
 		vk::ShaderModuleCreateInfo vertex_module_info{};
 		vertex_module_info.setCodeSize(graphicsPipelineInfo.vertexCode.size());
 		vertex_module_info.setPCode(reinterpret_cast<const std::uint32_t*>(graphicsPipelineInfo.vertexCode.data()));
-		auto vertex_module = device.createShaderModuleUnique(vertex_module_info);
+		auto vertex_module = device.createShaderModuleUnique(vertex_module_info).value;
 		vk::PipelineShaderStageCreateInfo vertex_stage_info{};
 		vertex_stage_info.setStage(vk::ShaderStageFlagBits::eVertex);
 		vertex_stage_info.setModule(vertex_module.get());
@@ -2162,7 +2162,7 @@ namespace sm::gfx
 		vk::ShaderModuleCreateInfo fragment_module_info{};
 		fragment_module_info.setCodeSize(graphicsPipelineInfo.fragmentCode.size());
 		fragment_module_info.setPCode(reinterpret_cast<const std::uint32_t*>(graphicsPipelineInfo.fragmentCode.data()));
-		auto fragment_module = device.createShaderModuleUnique(fragment_module_info);
+		auto fragment_module = device.createShaderModuleUnique(fragment_module_info).value;
 		vk::PipelineShaderStageCreateInfo fragment_stage_info{};
 		fragment_stage_info.setStage(vk::ShaderStageFlagBits::eFragment);
 		fragment_stage_info.setModule(fragment_module.get());
@@ -2277,10 +2277,10 @@ namespace sm::gfx
 		vk::Win32SurfaceCreateInfoKHR surface_info{};
 		surface_info.setHinstance(hinstance);
 		surface_info.setHwnd(hwnd);
-		m_surface = vk_instance.createWin32SurfaceKHRUnique(surface_info);
+		m_surface = vk_instance.createWin32SurfaceKHRUnique(surface_info).value;
 #endif
 
-		m_fence = m_device->get_device().createFenceUnique({});
+		m_fence = m_device->get_device().createFenceUnique({}).value;
 
 		resize(swapChainInfo.initialWidth, swapChainInfo.initialHeight);
 
@@ -2303,7 +2303,7 @@ namespace sm::gfx
 	{
 		cleanup();
 
-		auto surfaceCapabilities = m_device->get_physical_device().getSurfaceCapabilitiesKHR(m_surface.get());
+		auto surfaceCapabilities = m_device->get_physical_device().getSurfaceCapabilitiesKHR(m_surface.get()).value;
 
 		std::uint32_t minImageCount = surfaceCapabilities.minImageCount + 1;
 		if (surfaceCapabilities.maxImageCount != -1 && minImageCount > surfaceCapabilities.maxImageCount)
@@ -2341,9 +2341,9 @@ namespace sm::gfx
 		swap_chain_info.setOldSwapchain(oldSwapChain.get());
 
 		auto vk_device = m_device->get_device();
-		m_swapChain = vk_device.createSwapchainKHRUnique(swap_chain_info);
+		m_swapChain = vk_device.createSwapchainKHRUnique(swap_chain_info).value;
 
-		auto images = vk_device.getSwapchainImagesKHR(m_swapChain.get());
+		auto images = vk_device.getSwapchainImagesKHR(m_swapChain.get()).value;
 		m_imageHandles.resize(images.size());
 		for (auto i = 0; i < images.size(); ++i)
 		{
