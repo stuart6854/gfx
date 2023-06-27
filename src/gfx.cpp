@@ -551,7 +551,7 @@ namespace sm::gfx
 		}
 
 		outTextureHandle = swapChain->get_current_image_handle();
-		return outTextureHandle.fullHandle > 0;
+		return outTextureHandle > 0;
 	}
 
 #pragma endregion
@@ -645,7 +645,7 @@ namespace sm::gfx
 		}
 
 		Texture* depthAttachment{ nullptr };
-		if (renderPassInfo.depthAttachment.fullHandle != 0)
+		if (renderPassInfo.depthAttachment != 0)
 		{
 			auto success = device->get_texture(depthAttachment, renderPassInfo.depthAttachment);
 			GFX_ASSERT(success, "Failed to get Texture for depth attachment from handle!");
