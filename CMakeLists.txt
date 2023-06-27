@@ -15,12 +15,13 @@ endif ()
 # Set the project name and language
 project(GFX LANGUAGES CXX)
 
-include(Dependencies.cmake)
-gfx_setup_dependencies()
+find_package(Vulkan REQUIRED)
 
 add_subdirectory(src)
 
 option(gfx_ENABLE_EXAMPLES "Build example projects" OFF)
 if (gfx_ENABLE_EXAMPLES)
+    include(Dependencies.cmake)
+    gfx_setup_dependencies()
     add_subdirectory(examples)
 endif ()
