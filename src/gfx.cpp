@@ -12,12 +12,12 @@
 
 #include <vulkan/vulkan.hpp>
 
-VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
+VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE; // NOLINT
 
 namespace sm::gfx
 {
-	static std::function<void(const char* msg)> s_errorCallback;
-	static std::unique_ptr<Context> s_context;
+	static std::function<void(const char* msg)> s_errorCallback; // NOLINT
+	static std::unique_ptr<Context> s_context;					 // NOLINT
 
 #pragma region Public Header
 
