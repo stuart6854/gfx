@@ -98,6 +98,7 @@ namespace sm::gfx
 	struct AppInfo
 	{
 		std::string appName;
+		std::string engineName;
 	};
 	bool initialise(const AppInfo& appInfo);
 	void shutdown();

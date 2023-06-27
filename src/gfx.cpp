@@ -973,6 +973,7 @@ namespace sm::gfx
 		vk::ApplicationInfo vk_app_info{};
 		vk_app_info.setApiVersion(VK_API_VERSION_1_3);
 		vk_app_info.setPApplicationName(appInfo.appName.c_str());
+		vk_app_info.setPEngineName(appInfo.engineName.c_str());
 
 		std::vector<const char*> extensions = {
 			VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
