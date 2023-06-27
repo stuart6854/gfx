@@ -2,7 +2,7 @@
  * Copyright (c) Stuart Millman 2023.
  */
 
-#include "gfx_render_graph.hpp"
+#include "gfx/gfx_render_graph.hpp"
 
 namespace sm::gfx
 {

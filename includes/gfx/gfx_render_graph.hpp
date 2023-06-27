@@ -5,7 +5,7 @@
 #ifndef GFX_GFX_RENDER_GRAPH_HPP
 #define GFX_GFX_RENDER_GRAPH_HPP
 
-#include <gfx.hpp>
+#include "gfx.hpp"
 
 #include <string>
 #include <functional>

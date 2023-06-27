@@ -2,8 +2,8 @@
  * Copyright (c) Stuart Millman 2023.
  */
 
-#include <gfx.hpp>
-#include <gfx_render_graph.hpp>
+#include "gfx/gfx.hpp"
+#include "gfx/gfx_render_graph.hpp"
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>

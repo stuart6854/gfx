@@ -5,7 +5,7 @@
 #ifndef GFX_GFX_P_HPP
 #define GFX_GFX_P_HPP
 
-#include "gfx.hpp"
+#include "gfx/gfx.hpp"
 
 #if _WIN32
 	#define NOMINMAX
