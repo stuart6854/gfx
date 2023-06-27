@@ -29,7 +29,8 @@ add_custom_target("${GFX_EXAMPLE_NAME}_model" DEPENDS "${CMAKE_CURRENT_BINARY_DI
 
 add_executable(${GFX_EXAMPLE_NAME} main.cpp)
 
-target_link_libraries(${GFX_EXAMPLE_NAME} PRIVATE gfx glfw glm::glm tinyobjloader::tinyobjloader)
+target_include_directories(gfx PRIVATE ../libs/include)
+target_link_libraries(${GFX_EXAMPLE_NAME} PRIVATE gfx glfw tinyobjloader::tinyobjloader)
 
 add_dependencies(${GFX_EXAMPLE_NAME} "${GFX_EXAMPLE_NAME}_shader_vert")
 add_dependencies(${GFX_EXAMPLE_NAME} "${GFX_EXAMPLE_NAME}_shader_frag")

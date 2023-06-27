@@ -20,6 +20,7 @@ add_custom_target("${GFX_EXAMPLE_NAME}_shader_frag" DEPENDS "${CMAKE_CURRENT_BIN
 
 add_executable(${GFX_EXAMPLE_NAME} main.cpp)
 
+target_include_directories(gfx PRIVATE ../libs/include)
 target_link_libraries(${GFX_EXAMPLE_NAME} PRIVATE gfx glfw)
 
 add_dependencies(${GFX_EXAMPLE_NAME} "${GFX_EXAMPLE_NAME}_shader_vert")

@@ -38,8 +38,8 @@ add_custom_target("${GFX_EXAMPLE_NAME}_texture" DEPENDS "${CMAKE_CURRENT_BINARY_
 
 add_executable(${GFX_EXAMPLE_NAME} main.cpp)
 
-target_include_directories(${GFX_EXAMPLE_NAME} PRIVATE ${Stb_INCLUDE_DIR})
-target_link_libraries(${GFX_EXAMPLE_NAME} PRIVATE gfx glfw glm::glm tinyobjloader::tinyobjloader)
+target_include_directories(${GFX_EXAMPLE_NAME} PRIVATE ../libs/include ${Stb_INCLUDE_DIR})
+target_link_libraries(${GFX_EXAMPLE_NAME} PRIVATE gfx glfw tinyobjloader::tinyobjloader)
 
 add_dependencies(${GFX_EXAMPLE_NAME} "${GFX_EXAMPLE_NAME}_shader_vert")
 add_dependencies(${GFX_EXAMPLE_NAME} "${GFX_EXAMPLE_NAME}_shader_frag")

@@ -1,0 +1,3 @@
+glm - https://github.com/g-truc/glm/commit/5c46b9c07008ae65cb81ab79cd677ecc1934b903
+VulkanMemoryAllocator - https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator/commit/0aa3989b8f382f185fdf646cc83a1d16fa31d6ab
+VulkanMemoryAllocator-Hpp - https://github.com/YaaZ/VulkanMemoryAllocator-Hpp/commit/b75a4351cc401f1d4f3929038b8bd38abb78f0c7
