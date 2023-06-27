@@ -20,6 +20,7 @@ gfx_setup_dependencies()
 
 add_subdirectory(src)
 
-#if (gfx_ENABLE_EXAMPLES)
-add_subdirectory(examples)
-#endif ()
+option(gfx_ENABLE_EXAMPLES "Build example projects" OFF)
+if (gfx_ENABLE_EXAMPLES)
+    add_subdirectory(examples)
+endif ()
