@@ -329,6 +329,8 @@ namespace sm::gfx
 
 	bool create_graphics_pipeline(PipelineHandle& outPipelineHandle, DeviceHandle deviceHandle, const GraphicsPipelineInfo& graphicsPipelineInfo)
 	{
+		GFX_ASSERT(graphicsPipelineInfo.vertexCode.empty() == false, "Graphics pipeline requires Vertex shader byte code!");
+		GFX_ASSERT(graphicsPipelineInfo.fragmentCode.empty() == false, "Graphics pipeline requires Vertex shader byte code!");
 		GFX_ASSERT(s_context && s_context->is_valid(), "GFX has not been initialised!");
 
 		Device* device{ nullptr };
@@ -2151,22 +2153,22 @@ namespace sm::gfx
 		m_layout = device.createPipelineLayoutUnique(pipeline_layout_info).value;
 
 		vk::ShaderModuleCreateInfo vertex_module_info{};
-		vertex_module_info.setCodeSize(graphicsPipelineInfo.vertexCode.size());
-		vertex_module_info.setPCode(reinterpret_cast<const std::uint32_t*>(graphicsPipelineInfo.vertexCode.data()));
+		vertex_module_info.setCodeSize(graphicsPipelineInfo.vertexCode.size() * sizeof(uint32_t));
+		vertex_module_info.setPCode(graphicsPipelineInfo.vertexCode.data());
 		auto vertex_module = device.createShaderModuleUnique(vertex_module_info).value;
 		vk::PipelineShaderStageCreateInfo vertex_stage_info{};
 		vertex_stage_info.setStage(vk::ShaderStageFlagBits::eVertex);
 		vertex_stage_info.setModule(vertex_module.get());
-		vertex_stage_info.setPName("vs_main");
+		vertex_stage_info.setPName("main");
 
 		vk::ShaderModuleCreateInfo fragment_module_info{};
-		fragment_module_info.setCodeSize(graphicsPipelineInfo.fragmentCode.size());
-		fragment_module_info.setPCode(reinterpret_cast<const std::uint32_t*>(graphicsPipelineInfo.fragmentCode.data()));
+		fragment_module_info.setCodeSize(graphicsPipelineInfo.fragmentCode.size() * sizeof(std::uint32_t));
+		fragment_module_info.setPCode(graphicsPipelineInfo.fragmentCode.data());
 		auto fragment_module = device.createShaderModuleUnique(fragment_module_info).value;
 		vk::PipelineShaderStageCreateInfo fragment_stage_info{};
 		fragment_stage_info.setStage(vk::ShaderStageFlagBits::eFragment);
 		fragment_stage_info.setModule(fragment_module.get());
-		fragment_stage_info.setPName("ps_main");
+		fragment_stage_info.setPName("main");
 
 		const std::vector stages = { vertex_stage_info, fragment_stage_info };
 

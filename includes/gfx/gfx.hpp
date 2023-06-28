@@ -187,9 +187,9 @@ namespace sm::gfx
 	};
 	struct GraphicsPipelineInfo
 	{
-		std::vector<char> vertexCode;
+		std::vector<std::uint32_t> vertexCode;
 		std::vector<VertexAttribute> vertexAttributes;
-		std::vector<char> fragmentCode;
+		std::vector<std::uint32_t> fragmentCode;
 		std::vector<DescriptorSetInfo> descriptorSets;
 		PipelineConstantBlock constantBlock;
 
