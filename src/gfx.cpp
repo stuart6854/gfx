@@ -2399,7 +2399,10 @@ namespace sm::gfx
 		const VkDebugUtilsMessengerCallbackDataEXT* callback_data,
 		void* user_data)
 	{
-		s_errorCallback(callback_data->pMessage);
+		if (s_errorCallback)
+		{
+			s_errorCallback(callback_data->pMessage);
+		}
 
 		return VK_FALSE;
 	}
