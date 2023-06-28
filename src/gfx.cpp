@@ -298,6 +298,21 @@ namespace sm::gfx
 		device->wait_on_fence(fenceHandle);
 	}
 
+	void destroy_semaphore(SemaphoreHandle semaphoreHandle)
+	{
+		GFX_ASSERT(s_context && s_context->is_valid(), "GFX has not been initialised!");
+
+		Device* device{ nullptr };
+		if (!s_context->get_device(device, semaphoreHandle.deviceHandle))
+		{
+			s_errorCallback("gfx::destroy_semaphore() - semaphoreHandle must be valid!");
+			return;
+		}
+		GFX_ASSERT(device != nullptr, "Device should not be null!");
+
+		device->destroy_semaphore(semaphoreHandle);
+	}
+
 	bool create_command_list(CommandListHandle& outCommandListHandle, DeviceHandle deviceHandle, std::uint32_t queueIndex)
 	{
 		GFX_ASSERT(s_context && s_context->is_valid(), "GFX has not been initialised!");
@@ -1265,6 +1280,11 @@ namespace sm::gfx
 		m_fenceMap.erase(fenceHandle.resourceHandle);
 	}
 
+	void Device::destroy_semaphore(SemaphoreHandle semaphoreHandle)
+	{
+		m_semaphoreMap.erase(semaphoreHandle.resourceHandle);
+	}
+
 	auto Device::create_command_list(CommandListHandle& outCommandListHandle, std::uint32_t queueIndex) -> bool
 	{
 		auto queueFamily = m_queueFamilies.at(queueIndex);
@@ -1329,7 +1349,8 @@ namespace sm::gfx
 		vk::Semaphore signalSemaphore{};
 		if (outSemaphoreHandle != nullptr)
 		{
-			// TODO: Create signalSemaphore
+			*outSemaphoreHandle = create_semaphore();
+			signalSemaphore = m_semaphoreMap.at(outSemaphoreHandle->resourceHandle).get();
 		}
 
 		const auto& command_list = m_commandListMap.at(submitInfo.commandList.resourceHandle);
@@ -1662,6 +1683,17 @@ namespace sm::gfx
 
 		m_nextFenceId += 1;
 		return fenceHandle;
+	}
+
+	auto Device::create_semaphore() -> SemaphoreHandle
+	{
+		auto semaphoreHandle = SemaphoreHandle(m_deviceHandle, ResourceHandle(m_nextSemaphoreId));
+
+		vk::SemaphoreCreateInfo semaphore_info{};
+		m_semaphoreMap[semaphoreHandle.resourceHandle] = m_device->createSemaphoreUnique(semaphore_info).value;
+
+		m_nextSemaphoreId += 1;
+		return semaphoreHandle;
 	}
 
 	auto Device::get_descriptor_set_layout_binding(const DescriptorBindingInfo& descriptorBindingInfo) -> vk::DescriptorSetLayoutBinding

@@ -86,6 +86,8 @@ namespace sm::gfx
 
 		void wait_on_fence(FenceHandle fenceHandle);
 
+		void destroy_semaphore(SemaphoreHandle semaphoreHandle);
+
 		auto create_command_list(CommandListHandle& outCommandListHandle, std::uint32_t queueIndex) -> bool;
 		bool get_command_list(CommandList*& outCommandList, CommandListHandle commandListHandle);
 		bool submit_command_list(const SubmitInfo& submitInfo, FenceHandle* outFenceHandle, SemaphoreHandle* outSemaphoreHandle);
@@ -122,6 +124,7 @@ namespace sm::gfx
 
 	private:
 		auto create_fence() -> FenceHandle;
+		auto create_semaphore() -> SemaphoreHandle;
 
 		static auto get_descriptor_set_layout_binding(const DescriptorBindingInfo& descriptorBindingInfo) -> vk::DescriptorSetLayoutBinding;
 
@@ -142,6 +145,8 @@ namespace sm::gfx
 
 		std::unordered_map<ResourceHandle, vk::UniqueFence> m_fenceMap;
 		std::uint32_t m_nextFenceId{ 1 };
+		std::unordered_map<ResourceHandle, vk::UniqueSemaphore> m_semaphoreMap;
+		std::uint32_t m_nextSemaphoreId{ 1 };
 
 		std::unordered_map<ResourceHandle, std::unique_ptr<CommandList>> m_commandListMap;
 		std::uint32_t m_nextCommandListId{ 1 };
