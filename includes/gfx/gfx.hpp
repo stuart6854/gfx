@@ -118,6 +118,8 @@ namespace sm::gfx
 	bool create_device(DeviceHandle& outDeviceHandle, const DeviceInfo& deviceInfo);
 	void destroy_device(DeviceHandle deviceHandle);
 
+	void wait_for_device_idle(DeviceHandle deviceHandle);
+
 #pragma region Device Resources
 
 	enum class Format

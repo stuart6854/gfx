@@ -65,7 +65,24 @@ namespace sm::gfx
 	{
 		GFX_ASSERT(s_context && s_context->is_valid(), "GFX has not been initialised!");
 
+		wait_for_device_idle(deviceHandle);
+
 		s_context->destroy_device(deviceHandle);
+	}
+
+	void wait_for_device_idle(DeviceHandle deviceHandle)
+	{
+		GFX_ASSERT(s_context && s_context->is_valid(), "GFX has not been initialised!");
+
+		Device* device{ nullptr };
+		if (!s_context->get_device(device, deviceHandle))
+		{
+			s_errorCallback("gfx::wait_for_device_idle() - deviceHandle must be valid!");
+			return;
+		}
+		GFX_ASSERT(device != nullptr, "Device should not be null!");
+
+		device->get_device().waitIdle();
 	}
 
 #pragma endregion
