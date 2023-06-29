@@ -7,6 +7,7 @@
 
 #include "gfx.hpp"
 
+#include <memory>
 #include <string>
 #include <functional>
 #include <unordered_map>

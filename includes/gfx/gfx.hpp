@@ -21,6 +21,17 @@
 	#define GFX_LOG_ERR_FMT(_fmt, ...) std::cerr << std::format(_fmt, __VA_ARGS__) << std::endl
 #endif
 
+#if defined(_WIN32)
+	#define GFX_DEBUG_BREAK() __debugbreak()
+#elif defined(__linux__)
+	#include <csignal>
+	#if defined(SIGTRAP)
+		#define GFX_DEBUG_BREAK() raise(SIGTRAP)
+	#else
+		#define GFX_DEBUG_BREAK() raise(SIGABRT)
+	#endif
+#endif
+
 #ifndef GFX_ASSERT
 	#define GFX_ASSERT(_expr, _msg) \
 		do                          \
@@ -28,7 +39,7 @@
 			if (!(_expr))           \
 			{                       \
 				GFX_LOG_ERR(_msg);  \
-				__debugbreak();     \
+				GFX_DEBUG_BREAK();  \
 			}                       \
 		}                           \
 		while (false)
