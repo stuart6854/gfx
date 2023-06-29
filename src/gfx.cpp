@@ -1014,6 +1014,8 @@ namespace sm::gfx
 			VK_KHR_SURFACE_EXTENSION_NAME,
 #if _WIN32
 			VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
+#elif __linux__
+			VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME
 #endif
 		};
 		std::vector<const char*> layers = {
@@ -2322,13 +2324,23 @@ namespace sm::gfx
 		auto vk_instance = context->get_instance();
 		GFX_ASSERT(vk_instance, "vk_instance should be valid!");
 
+		GFX_ASSERT(swapChainInfo.platformDisplayHandle != nullptr, "platformDisplayHandle not not be nullptr!");
+		GFX_ASSERT(swapChainInfo.platformWindowHandle != nullptr, "platformWindowHandle not not be nullptr!");
+
 #if _WIN32
-		HINSTANCE hinstance = GetModuleHandle(nullptr);
-		HWND hwnd = static_cast<HWND>(swapChainInfo.platformWindowHandle);
+		auto* hinstance = static_cast<HINSTANCE>(swapChainInfo.platformDisplayHandle); // GetModuleHandle(nullptr);
+		auto* hwnd = static_cast<HWND>(swapChainInfo.platformWindowHandle);
 		vk::Win32SurfaceCreateInfoKHR surface_info{};
 		surface_info.setHinstance(hinstance);
 		surface_info.setHwnd(hwnd);
 		m_surface = vk_instance.createWin32SurfaceKHRUnique(surface_info).value;
+#elif __linux__
+		auto* wlDisplay = static_cast<wl_display*>(swapChainInfo.platformDisplayHandle);
+		auto* wlSurface = static_cast<wl_surface*>(swapChainInfo.platformWindowHandle);
+		vk::WaylandSurfaceCreateInfoKHR surface_info{};
+		surface_info.setDisplay(wlDisplay);
+		surface_info.setSurface(wlSurface);
+		m_surface = vk_instance.createWaylandSurfaceKHRUnique(surface_info).value;
 #endif
 
 		m_fence = m_device->get_device().createFenceUnique({}).value;
@@ -2357,7 +2369,7 @@ namespace sm::gfx
 		auto surfaceCapabilities = m_device->get_physical_device().getSurfaceCapabilitiesKHR(m_surface.get()).value;
 
 		std::uint32_t minImageCount = surfaceCapabilities.minImageCount + 1;
-		if (surfaceCapabilities.maxImageCount != -1 && minImageCount > surfaceCapabilities.maxImageCount)
+		if (surfaceCapabilities.maxImageCount != 0 && minImageCount > surfaceCapabilities.maxImageCount)
 		{
 			minImageCount = surfaceCapabilities.maxImageCount;
 		}

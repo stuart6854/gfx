@@ -279,6 +279,7 @@ namespace sm::gfx
 
 	struct SwapChainInfo
 	{
+		void* platformDisplayHandle; // Windows=HINSTANCE
 		void* platformWindowHandle; // Windows=HWND
 		std::int32_t initialWidth;
 		std::int32_t initialHeight;

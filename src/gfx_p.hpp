@@ -11,6 +11,9 @@
 	#define NOMINMAX
 	#define WIN32_LEAN_AND_MEAN
 	#define VK_USE_PLATFORM_WIN32_KHR
+#elif __linux__
+	#include <wayland-client.h>
+	#define VK_USE_PLATFORM_WAYLAND_KHR
 #endif
 #define VULKAN_HPP_NO_EXCEPTIONS
 #define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
