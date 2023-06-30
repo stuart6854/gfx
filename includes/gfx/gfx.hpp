@@ -142,6 +142,7 @@ namespace sm::gfx
 		eRGB32,
 		eRGBA8,
 		eRGBA32,
+		eBGRA8,
 		eDepth16,
 		eDepth24Stencil8,
 		eDepth32,
@@ -215,6 +216,9 @@ namespace sm::gfx
 		PipelineConstantBlock constantBlock;
 
 		bool depthTest;
+
+		std::vector<gfx::Format> colorAttachments{};
+		gfx::Format depthAttachmentFormat{ gfx::Format::eUndefined };
 	};
 	bool create_graphics_pipeline(PipelineHandle& outPipelineHandle, DeviceHandle deviceHandle, const GraphicsPipelineInfo& graphicsPipelineInfo);
 	void destroy_pipeline(PipelineHandle pipelineHandle);

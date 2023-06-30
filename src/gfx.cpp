@@ -150,6 +150,8 @@ namespace sm::gfx
 				return vk::Format::eR32G32B32A32Sfloat;
 			case Format::eDepth16:
 				return vk::Format::eD16Unorm;
+			case Format::eBGRA8:
+				return vk::Format::eB8G8R8A8Srgb;
 			case Format::eDepth24Stencil8:
 				return vk::Format::eD24UnormS8Uint;
 			case Format::eDepth32:
@@ -2300,12 +2302,17 @@ namespace sm::gfx
 		vk::PipelineDynamicStateCreateInfo dynamic_state{};
 		dynamic_state.setDynamicStates(dynamicStates);
 
-		std::vector<vk::Format> colorAttachmentFormats{ vk::Format::eB8G8R8A8Srgb }; // #TODO: Optional.
+		std::vector<vk::Format> colorAttachmentFormats(graphicsPipelineInfo.colorAttachments.size());
+		for (auto i = 0; i < colorAttachmentFormats.size(); ++i)
+		{
+			colorAttachmentFormats[i] = convert_format_to_vk_format(graphicsPipelineInfo.colorAttachments[i]);
+		}
+
 		vk::PipelineRenderingCreateInfo rendering_info{};
 		rendering_info.setColorAttachmentFormats(colorAttachmentFormats);
 		if (graphicsPipelineInfo.depthTest)
 		{
-			rendering_info.setDepthAttachmentFormat(vk::Format::eD16Unorm); // #TODO: Optional.
+			rendering_info.setDepthAttachmentFormat(convert_format_to_vk_format(graphicsPipelineInfo.depthAttachmentFormat));
 		}
 
 		vk::GraphicsPipelineCreateInfo vk_pipeline_info{};
