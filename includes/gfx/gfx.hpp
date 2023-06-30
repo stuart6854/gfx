@@ -328,7 +328,7 @@ namespace sm::gfx
 		eUInt32,
 	};
 	void bind_index_buffer(CommandListHandle commandListHandle, BufferHandle bufferHandle, IndexType indexType);
-	void bind_vertex_buffer(CommandListHandle commandListHandle, BufferHandle bufferHandle);
+	void bind_vertex_buffers(CommandListHandle commandListHandle, std::uint32_t firstBinding, const std::vector<BufferHandle>& buffers);
 
 	void draw(CommandListHandle commandListHandle, std::uint32_t vertex_count, std::uint32_t instance_count, std::uint32_t first_vertex, std::uint32_t first_instance);
 	void draw_indexed(CommandListHandle commandListHandle, std::uint32_t index_count, std::uint32_t instance_count, std::uint32_t first_index, std::int32_t vertex_offset, std::uint32_t first_instance);

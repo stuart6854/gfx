@@ -869,7 +869,7 @@ namespace sm::gfx
 		commandList->bind_index_buffer(buffer, vk_index_type);
 	}
 
-	void bind_vertex_buffer(CommandListHandle commandListHandle, BufferHandle bufferHandle)
+	void bind_vertex_buffers(CommandListHandle commandListHandle, std::uint32_t firstBinding, const std::vector<BufferHandle>& buffers)
 	{
 		GFX_ASSERT(s_context && s_context->is_valid(), "GFX has not been initialised!");
 
@@ -886,13 +886,18 @@ namespace sm::gfx
 			return;
 		}
 
-		Buffer* buffer{ nullptr };
-		if (!device->get_buffer(buffer, bufferHandle))
+		std::vector<vk::Buffer> vkBuffers(buffers.size());
+		for (auto i = 0; i < buffers.size(); ++i)
 		{
-			return;
+			Buffer* buffer{ nullptr };
+			if (!device->get_buffer(buffer, buffers[i]))
+			{
+				return;
+			}
+			vkBuffers[i] = buffer->get_buffer();
 		}
 
-		commandList->bind_vertex_buffer(buffer);
+		commandList->bind_vertex_buffer(firstBinding, vkBuffers);
 	}
 
 	void draw(CommandListHandle commandListHandle, std::uint32_t vertex_count, std::uint32_t instance_count, std::uint32_t first_vertex, std::uint32_t first_instance)
@@ -1900,14 +1905,15 @@ namespace sm::gfx
 		m_commandBuffer->bindIndexBuffer(buffer->get_buffer(), 0, indexType);
 	}
 
-	void CommandList::bind_vertex_buffer(Buffer* buffer)
+	void CommandList::bind_vertex_buffer(std::uint32_t firstBinding, const std::vector<vk::Buffer>& buffers)
 	{
 		if (!m_hasBegun)
 		{
 			return;
 		}
 
-		m_commandBuffer->bindVertexBuffers(0, buffer->get_buffer(), { 0 });
+		const std::vector<vk::DeviceSize> offsets(buffers.size(), 0);
+		m_commandBuffer->bindVertexBuffers(firstBinding, buffers, offsets);
 	}
 
 	void CommandList::draw(std::uint32_t vertex_count, std::uint32_t instance_count, std::uint32_t first_vertex, std::uint32_t first_instance)

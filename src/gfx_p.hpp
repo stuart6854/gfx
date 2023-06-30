@@ -205,7 +205,7 @@ namespace sm::gfx
 		void dispatch(std::uint32_t groupCountX, std::uint32_t groupCountY, std::uint32_t groupCountZ);
 
 		void bind_index_buffer(Buffer* buffer, vk::IndexType indexType);
-		void bind_vertex_buffer(Buffer* buffer);
+		void bind_vertex_buffer(std::uint32_t firstBinding, const std::vector<vk::Buffer>& buffers);
 
 		void draw(std::uint32_t vertex_count, std::uint32_t instance_count, std::uint32_t first_vertex, std::uint32_t first_instance);
 		void draw_indexed(std::uint32_t index_count, std::uint32_t instance_count, std::uint32_t first_index, std::int32_t vertex_offset, std::uint32_t first_instance);
