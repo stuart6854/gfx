@@ -197,14 +197,20 @@ namespace sm::gfx
 	bool create_compute_pipeline(PipelineHandle& outPipelineHandle, DeviceHandle deviceHandle, const ComputePipelineInfo& computePipelineInfo);
 	struct VertexAttribute
 	{
-		std::string name;
-		Format format;
+		std::string name{};
+		std::uint32_t location{};
+		Format format{};
+	};
+	struct VertexBinding
+	{
+		std::string name{};
+		std::vector<VertexAttribute> attributes{};
 	};
 	struct GraphicsPipelineInfo
 	{
 		std::vector<std::uint32_t> vertexCode;
-		std::vector<VertexAttribute> vertexAttributes;
 		std::vector<std::uint32_t> fragmentCode;
+		std::vector<VertexBinding> vertexInputBindings{};
 		std::vector<DescriptorSetInfo> descriptorSets;
 		PipelineConstantBlock constantBlock;
 
@@ -280,7 +286,7 @@ namespace sm::gfx
 	struct SwapChainInfo
 	{
 		void* platformDisplayHandle; // Windows=HINSTANCE
-		void* platformWindowHandle; // Windows=HWND
+		void* platformWindowHandle;	 // Windows=HWND
 		std::int32_t initialWidth;
 		std::int32_t initialHeight;
 	};

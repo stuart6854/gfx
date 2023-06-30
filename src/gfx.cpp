@@ -2223,6 +2223,31 @@ namespace sm::gfx
 
 		const std::vector stages = { vertex_stage_info, fragment_stage_info };
 
+		std::vector<vk::VertexInputBindingDescription> vk_bindings{};
+		std::vector<vk::VertexInputAttributeDescription> vk_attributes{};
+		for (auto i = 0; i < graphicsPipelineInfo.vertexInputBindings.size(); ++i)
+		{
+			const auto& binding = graphicsPipelineInfo.vertexInputBindings.at(i);
+
+			std::uint32_t stride{ 0 };
+			for (const auto& attribute : binding.attributes)
+			{
+				auto& vk_attribute = vk_attributes.emplace_back();
+				vk_attribute.setBinding(i);
+				vk_attribute.setLocation(attribute.location);
+				vk_attribute.setFormat(convert_format_to_vk_format(attribute.format));
+				vk_attribute.setOffset(stride);
+
+				stride += convert_format_to_byte_size(attribute.format);
+			}
+
+			auto& vk_binding = vk_bindings.emplace_back();
+			vk_binding.setBinding(i);
+			vk_binding.setInputRate(vk::VertexInputRate::eVertex);
+			vk_binding.setStride(stride);
+		}
+
+#if 0
 		std::uint32_t stride{};
 		std::vector<vk::VertexInputAttributeDescription> vk_attributes(graphicsPipelineInfo.vertexAttributes.size());
 		for (auto i = 0; i < vk_attributes.size(); ++i)
@@ -2236,18 +2261,18 @@ namespace sm::gfx
 
 			stride += convert_format_to_byte_size(attribute.format);
 		}
+#endif
 
+#if 0
 		vk::VertexInputBindingDescription vk_binding{};
 		vk_binding.setBinding(0);
 		vk_binding.setInputRate(vk::VertexInputRate::eVertex);
 		vk_binding.setStride(stride);
+#endif
 
 		vk::PipelineVertexInputStateCreateInfo vertex_input_state{};
-		if (!graphicsPipelineInfo.vertexAttributes.empty())
-		{
-			vertex_input_state.setVertexAttributeDescriptions(vk_attributes);
-			vertex_input_state.setVertexBindingDescriptions(vk_binding);
-		}
+		vertex_input_state.setVertexBindingDescriptions(vk_bindings);
+		vertex_input_state.setVertexAttributeDescriptions(vk_attributes);
 
 		vk::PipelineInputAssemblyStateCreateInfo input_assembly_state{};
 		input_assembly_state.setTopology(vk::PrimitiveTopology::eTriangleList);
