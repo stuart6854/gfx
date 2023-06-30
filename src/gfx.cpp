@@ -2253,29 +2253,6 @@ namespace sm::gfx
 			vk_binding.setStride(stride);
 		}
 
-#if 0
-		std::uint32_t stride{};
-		std::vector<vk::VertexInputAttributeDescription> vk_attributes(graphicsPipelineInfo.vertexAttributes.size());
-		for (auto i = 0; i < vk_attributes.size(); ++i)
-		{
-			const auto& attribute = graphicsPipelineInfo.vertexAttributes.at(i);
-			auto& vk_attribute = vk_attributes.at(i);
-			vk_attribute.setBinding(0);
-			vk_attribute.setLocation(i);
-			vk_attribute.setFormat(convert_format_to_vk_format(attribute.format));
-			vk_attribute.setOffset(stride);
-
-			stride += convert_format_to_byte_size(attribute.format);
-		}
-#endif
-
-#if 0
-		vk::VertexInputBindingDescription vk_binding{};
-		vk_binding.setBinding(0);
-		vk_binding.setInputRate(vk::VertexInputRate::eVertex);
-		vk_binding.setStride(stride);
-#endif
-
 		vk::PipelineVertexInputStateCreateInfo vertex_input_state{};
 		vertex_input_state.setVertexBindingDescriptions(vk_bindings);
 		vertex_input_state.setVertexAttributeDescriptions(vk_attributes);
