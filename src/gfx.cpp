@@ -381,6 +381,20 @@ namespace sm::gfx
 	{
 	}
 
+	bool create_descriptor_set(DescriptorSetHandle& outDescriptorSetHandle, DeviceHandle deviceHandle, const DescriptorSetInfo& setInfo)
+	{
+		GFX_ASSERT(s_context && s_context->is_valid(), "GFX has not been initialised!");
+
+		Device* device{ nullptr };
+		if (!s_context->get_device(device, deviceHandle))
+		{
+			return false;
+		}
+		GFX_ASSERT(device != nullptr, "Device should not be null!");
+
+		return device->create_descriptor_set(outDescriptorSetHandle, setInfo);
+	}
+
 	bool create_descriptor_set_from_pipeline(DescriptorSetHandle& outDescriptorSetHandle, PipelineHandle pipelineHandle, std::uint32_t set)
 	{
 		GFX_ASSERT(s_context && s_context->is_valid(), "GFX has not been initialised!");
@@ -777,7 +791,7 @@ namespace sm::gfx
 		commandList->bind_pipeline(pipeline);
 	}
 
-	void bind_descriptor_set(CommandListHandle commandListHandle, DescriptorSetHandle descriptorSetHandle)
+	void bind_descriptor_sets(CommandListHandle commandListHandle, std::uint32_t firstSet, const std::vector<DescriptorSetHandle>& descriptorSets)
 	{
 		GFX_ASSERT(s_context && s_context->is_valid(), "GFX has not been initialised!");
 
@@ -788,10 +802,14 @@ namespace sm::gfx
 		}
 		GFX_ASSERT(device != nullptr, "Device should not be null!");
 
-		vk::DescriptorSet descriptorSet{};
-		if (!device->get_descriptor_set(descriptorSet, descriptorSetHandle))
+		std::vector<vk::DescriptorSet> vkDescriptorSets(descriptorSets.size());
+		for (auto i = 0; i < descriptorSets.size(); ++i)
 		{
-			return;
+			auto descriptorSet = descriptorSets[i];
+			if (!device->get_descriptor_set(vkDescriptorSets[i], descriptorSet))
+			{
+				return;
+			}
 		}
 
 		CommandList* commandList{ nullptr };
@@ -800,7 +818,7 @@ namespace sm::gfx
 			return;
 		}
 
-		commandList->bind_descriptor_set(descriptorSet);
+		commandList->bind_descriptor_sets(firstSet, vkDescriptorSets);
 	}
 
 	void set_constants(CommandListHandle commandListHandle, std::uint32_t shaderStages, std::uint32_t offset, std::uint32_t size, const void* data)
@@ -1446,6 +1464,28 @@ namespace sm::gfx
 		return true;
 	}
 
+	bool Device::create_descriptor_set(DescriptorSetHandle& outDescriptorSetHandle, const DescriptorSetInfo& setInfo)
+	{
+		vk::DescriptorSetLayout descriptorSetLayout{};
+		if (!create_or_get_descriptor_set_layout(descriptorSetLayout, setInfo))
+		{
+			return false;
+		}
+
+		DescriptorSetHandle descriptorSetHandle(m_deviceHandle, ResourceHandle(m_nextDescriptorSetId));
+
+		vk::DescriptorSetAllocateInfo set_alloc_info{};
+		set_alloc_info.setDescriptorPool(m_descriptorPool.get());
+		set_alloc_info.setSetLayouts(descriptorSetLayout);
+		auto allocatedDescriptorSets = m_device->allocateDescriptorSetsUnique(set_alloc_info).value;
+
+		m_descriptorSetMap[descriptorSetHandle.resourceHandle] = std::move(allocatedDescriptorSets[0]);
+		m_nextDescriptorSetId += 1;
+
+		outDescriptorSetHandle = descriptorSetHandle;
+		return true;
+	}
+
 	bool Device::create_descriptor_set_from_pipeline(DescriptorSetHandle& outDescriptorSetHandle, PipelineHandle pipelineHandle, std::uint32_t set)
 	{
 		Pipeline* pipeline{ nullptr };
@@ -1859,7 +1899,7 @@ namespace sm::gfx
 		m_boundPipeline = pipeline;
 	}
 
-	void CommandList::bind_descriptor_set(vk::DescriptorSet descriptorSet)
+	void CommandList::bind_descriptor_sets(std::uint32_t firstSet, const std::vector<vk::DescriptorSet>& descriptorSets)
 	{
 		if (!m_hasBegun)
 		{
@@ -1873,7 +1913,7 @@ namespace sm::gfx
 
 		const vk::PipelineBindPoint bindPoint = m_boundPipeline->get_type() == PipelineType::eCompute ? vk::PipelineBindPoint::eCompute : vk::PipelineBindPoint::eGraphics;
 		const auto pipelineLayout = m_boundPipeline->get_pipeline_layout();
-		m_commandBuffer->bindDescriptorSets(bindPoint, pipelineLayout, 0, { descriptorSet }, {});
+		m_commandBuffer->bindDescriptorSets(bindPoint, pipelineLayout, firstSet, descriptorSets, {});
 	}
 
 	void CommandList::set_constants(vk::ShaderStageFlags shaderStages, std::uint32_t offset, std::uint32_t size, const void* data)

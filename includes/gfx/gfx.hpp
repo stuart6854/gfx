@@ -223,6 +223,7 @@ namespace sm::gfx
 	bool create_graphics_pipeline(PipelineHandle& outPipelineHandle, DeviceHandle deviceHandle, const GraphicsPipelineInfo& graphicsPipelineInfo);
 	void destroy_pipeline(PipelineHandle pipelineHandle);
 
+	bool create_descriptor_set(DescriptorSetHandle& outDescriptorSetHandle, DeviceHandle deviceHandle, const DescriptorSetInfo& setInfo);
 	bool create_descriptor_set_from_pipeline(DescriptorSetHandle& outDescriptorSetHandle, PipelineHandle pipelineHandle, std::uint32_t set);
 	void bind_buffer_to_descriptor_set(DescriptorSetHandle descriptorSetHandle, std::uint32_t binding, BufferHandle bufferHandle);
 	void bind_texture_to_descriptor_set(DescriptorSetHandle descriptorSetHandle, std::uint32_t binding, TextureHandle textureHandle, SamplerHandle samplerHandle);
@@ -321,7 +322,7 @@ namespace sm::gfx
 	void set_scissor(CommandListHandle commandListHandle, std::int32_t x, std::int32_t y, std::uint32_t width, std::uint32_t height);
 
 	void bind_pipeline(CommandListHandle commandListHandle, PipelineHandle pipelineHandle);
-	void bind_descriptor_set(CommandListHandle commandListHandle, DescriptorSetHandle descriptorSetHandle);
+	void bind_descriptor_sets(CommandListHandle commandListHandle, std::uint32_t firstSet, const std::vector<DescriptorSetHandle>& descriptorSets);
 	void set_constants(CommandListHandle commandListHandle, std::uint32_t shaderStages, std::uint32_t offset, std::uint32_t size, const void* data);
 
 	void dispatch(CommandListHandle commandListHandle, std::uint32_t groupCountX, std::uint32_t groupCountY, std::uint32_t groupCountZ);

@@ -102,6 +102,7 @@ namespace sm::gfx
 		void destroy_pipeline(PipelineHandle pipelineHandle);
 		bool get_pipeline(Pipeline*& outPipeline, PipelineHandle pipelineHandle);
 
+		bool create_descriptor_set(DescriptorSetHandle& outDescriptorSetHandle, const DescriptorSetInfo& setInfo);
 		bool create_descriptor_set_from_pipeline(DescriptorSetHandle& outDescriptorSetHandle, PipelineHandle pipelineHandle, std::uint32_t set);
 		bool get_descriptor_set(vk::DescriptorSet& outDescriptorSet, DescriptorSetHandle descriptorSetHandle);
 		void bind_buffer_to_descriptor_set(DescriptorSetHandle descriptorSetHandle, std::uint32_t binding, BufferHandle bufferHandle);
@@ -199,7 +200,7 @@ namespace sm::gfx
 		void set_scissor(std::int32_t x, std::int32_t y, std::uint32_t width, std::uint32_t height);
 
 		void bind_pipeline(Pipeline* pipeline);
-		void bind_descriptor_set(vk::DescriptorSet descriptorSet);
+		void bind_descriptor_sets(std::uint32_t firstSet, const std::vector<vk::DescriptorSet>& descriptorSets);
 		void set_constants(vk::ShaderStageFlags shaderStages, std::uint32_t offset, std::uint32_t size, const void* data);
 
 		void dispatch(std::uint32_t groupCountX, std::uint32_t groupCountY, std::uint32_t groupCountZ);
