@@ -2323,17 +2323,15 @@ namespace sm::gfx
 		depth_stencil_state.setStencilTestEnable(false);						 // #TODO: Optional.
 		depth_stencil_state.setDepthCompareOp(vk::CompareOp::eLessOrEqual);
 
-		std::vector<vk::PipelineColorBlendAttachmentState> colorBlendAttachments{
-			vk::PipelineColorBlendAttachmentState(
-				VK_FALSE,
-				vk::BlendFactor::eZero,
-				vk::BlendFactor::eOne,
-				vk::BlendOp::eAdd,
-				vk::BlendFactor::eZero,
-				vk::BlendFactor::eZero,
-				vk::BlendOp::eAdd,
-				vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA)
-		};
+		std::vector<vk::PipelineColorBlendAttachmentState> colorBlendAttachments(1);
+		colorBlendAttachments[0].blendEnable = VK_TRUE;
+		colorBlendAttachments[0].srcColorBlendFactor = vk::BlendFactor::eSrcAlpha;
+		colorBlendAttachments[0].dstColorBlendFactor = vk::BlendFactor::eOneMinusSrcAlpha;
+		colorBlendAttachments[0].colorBlendOp = vk::BlendOp::eAdd;
+		colorBlendAttachments[0].srcAlphaBlendFactor = vk::BlendFactor::eOne;
+		colorBlendAttachments[0].dstAlphaBlendFactor = vk::BlendFactor::eOneMinusSrcAlpha;
+		colorBlendAttachments[0].alphaBlendOp = vk::BlendOp::eAdd;
+		colorBlendAttachments[0].colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA;
 		vk::PipelineColorBlendStateCreateInfo color_blend_state{};
 		color_blend_state.setAttachments(colorBlendAttachments);
 
