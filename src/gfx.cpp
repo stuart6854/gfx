@@ -136,6 +136,8 @@ namespace sm::gfx
 		{
 			case Format::eUndefined:
 				return vk::Format::eUndefined;
+			case Format::eR8:
+				return vk::Format::eR8Unorm;
 			case Format::eRG8:
 				return vk::Format::eR8G8Unorm;
 			case Format::eRG32:
